@@ -6,7 +6,7 @@ import bcrypt from "bcrypt";
 const prisma = new PrismaClient();
 
 export const authOptions: NextAuthOptions = {
-  session: { strategy: "jwt" }, // or "jwt" as const
+  session: { strategy: "jwt" },
   providers: [
     Credentials({
       name: "Credentials",
@@ -18,15 +18,9 @@ export const authOptions: NextAuthOptions = {
         if (!creds?.email || !creds?.password) return null;
         const user = await prisma.user.findUnique({ where: { email: creds.email } });
         if (!user) return null;
-
         const ok = await bcrypt.compare(creds.password, user.password);
         if (!ok) return null;
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: user.name ?? undefined,
-        };
+        return { id: user.id, name: user.name ?? undefined, email: user.email };
       },
     }),
   ],
