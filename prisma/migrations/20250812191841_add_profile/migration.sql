@@ -1,0 +1,27 @@
+-- CreateTable
+CREATE TABLE "Profile" (
+    "userId" TEXT NOT NULL PRIMARY KEY,
+    "phone" TEXT,
+    "location" TEXT,
+    "openToWork" BOOLEAN NOT NULL DEFAULT true,
+    "visibility" TEXT NOT NULL DEFAULT 'everyone',
+    "website" TEXT,
+    "linkedin" TEXT,
+    "github" TEXT,
+    "portfolio" TEXT,
+    "yearsExperience" INTEGER,
+    "seniority" TEXT,
+    "skills" JSONB,
+    "industries" JSONB,
+    "summary" TEXT,
+    "desiredSalaryMin" INTEGER,
+    "desiredSalaryMax" INTEGER,
+    "salaryCurrency" TEXT,
+    "remotePreference" TEXT NOT NULL DEFAULT 'noPreference',
+    "willingToRelocate" BOOLEAN DEFAULT false,
+    "jobTypes" JSONB,
+    "preferredLocations" JSONB,
+    "notifications" JSONB,
+    "updatedAt" DATETIME NOT NULL,
+    CONSTRAINT "Profile_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE CASCADE ON UPDATE CASCADE
+);

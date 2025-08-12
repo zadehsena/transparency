@@ -1,5 +1,5 @@
 datasource db {
-  provider = "sqlite" // switch later if you want
+  provider = "sqlite"
   url      = "file:./dev.db"
 }
 
@@ -7,6 +7,35 @@ generator client {
   provider = "prisma-client-js"
 }
 
+/**
+ * New enums
+ */
+enum Visibility {
+  everyone
+  employers
+  private
+}
+
+enum RemotePreference {
+  remote
+  hybrid
+  onsite
+  noPreference
+}
+
+enum Seniority {
+  intern
+  junior
+  mid
+  senior
+  staff
+  principal
+  lead
+}
+
+/**
+ * Existing models (User now has `profile`)
+ */
 model User {
   id           String        @id @default(cuid())
   name         String?
@@ -14,6 +43,7 @@ model User {
   password     String
   createdAt    DateTime      @default(now())
   applications Application[]
+  profile      Profile?
 }
 
 model Company {
@@ -39,20 +69,19 @@ model BusinessUnit {
   company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId String
 
-  jobs Job[] // back‑relation
+  jobs Job[]
 }
 
 model Job {
   id       String   @id @default(cuid())
   title    String
-  company  String // legacy free‑text
+  company  String
   location String
   source   String?
   url      String?
   ats      String?
   postedAt DateTime @default(now())
 
-  // TEMP: make optional for backfill
   companyRel Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId  String
 
@@ -66,7 +95,7 @@ model SearchEvent {
   id        String   @id @default(cuid())
   term      String
   slug      String
-  companyId String? // if the company exists, we’ll link it
+  companyId String?
   createdAt DateTime @default(now())
 
   company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
@@ -91,4 +120,44 @@ enum ApplicationStatus {
   interview
   offer
   rejected
+}
+
+/**
+ * New profile
+ */
+model Profile {
+  userId     String     @id
+  phone      String?
+  location   String?
+  openToWork Boolean    @default(true)
+  visibility Visibility @default(everyone)
+
+  // Links & resume
+  website   String?
+  linkedin  String?
+  github    String?
+  portfolio String?
+
+  // Qualifications
+  yearsExperience Int?
+  seniority       Seniority?
+  skills          Json?
+  industries      Json?
+  summary         String?
+
+  // Job preferences
+  desiredSalaryMin   Int?
+  desiredSalaryMax   Int?
+  salaryCurrency     String?
+  remotePreference   RemotePreference @default(noPreference)
+  willingToRelocate  Boolean?         @default(false)
+  jobTypes           Json?
+  preferredLocations Json?
+
+  // Notifications
+  notifications Json?
+
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
