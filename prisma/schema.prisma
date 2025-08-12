@@ -1,15 +1,12 @@
-// 1️⃣ Datasource — tells Prisma what DB to use
 datasource db {
   provider = "sqlite" // you can change to "postgresql" or "mysql" later
   url      = "file:./dev.db"
 }
 
-// 2️⃣ Generator — tells Prisma to generate the client
 generator client {
   provider = "prisma-client-js"
 }
 
-// 3️⃣ Models — User, Job, Application
 model User {
   id            String         @id @default(cuid())
   name          String?
@@ -32,12 +29,19 @@ model Job {
 }
 
 model Application {
-  id        String   @id @default(cuid())
-  jobId     String
+  id        String             @id @default(cuid())
   userId    String
-  status    String   @default("applied")
-  appliedAt DateTime @default(now())
+  jobId     String
+  status    ApplicationStatus  @default(applied)
+  createdAt DateTime           @default(now())
 
-  job  Job  @relation(fields: [jobId], references: [id])
   user User @relation(fields: [userId], references: [id])
+  job  Job  @relation(fields: [jobId], references: [id])
+}
+
+enum ApplicationStatus {
+  applied
+  interview
+  offer
+  rejected
 }

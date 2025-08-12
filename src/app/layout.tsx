@@ -19,7 +19,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <Link href="/" className="text-xl font-semibold hover:opacity-80">
                 Transparency
               </Link>
-              <AuthButtons />
+              <div className="flex items-center gap-3">
+                <Link
+                  href="/jobs"
+                  className="rounded-lg border px-4 py-2 hover:bg-gray-50"
+                >
+                  Jobs
+                </Link>
+                <AuthButtons />
+              </div>
             </nav>
           </header>
           <main>{children}</main>
