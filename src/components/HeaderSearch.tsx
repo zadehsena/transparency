@@ -19,10 +19,19 @@ export default function HeaderSearch() {
   const canSearch = useMemo(() => q.trim().length > 1, [q]);
 
   const go = useCallback(() => {
-    if (!canSearch) return;
-    const slug = slugifyCompany(q);
-    router.push(`/company/${slug}`);
-  }, [q, canSearch, router]);
+  if (!canSearch) return;
+  const slug = slugifyCompany(q);
+
+  try {
+    const payload = JSON.stringify({ term: q, slug });
+    const blob = new Blob([payload], { type: "application/json" });
+    navigator.sendBeacon?.("/api/analytics/search", blob) ||
+      fetch("/api/analytics/search", { method: "POST", headers: { "Content-Type": "application/json" }, body: payload });
+  } catch {}
+
+  router.push(`/company/${slug}`);
+}, [q, canSearch, router]);
+
 
   return (
     <div className="flex w-full items-center gap-2">
