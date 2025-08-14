@@ -7,9 +7,6 @@ generator client {
   provider = "prisma-client-js"
 }
 
-/**
- * New enums
- */
 enum Visibility {
   everyone
   employers
@@ -33,9 +30,6 @@ enum Seniority {
   lead
 }
 
-/**
- * Existing models (User now has `profile`)
- */
 model User {
   id           String        @id @default(cuid())
   name         String?
@@ -73,14 +67,19 @@ model BusinessUnit {
 }
 
 model Job {
-  id       String   @id @default(cuid())
+  id       String  @id @default(cuid())
   title    String
   company  String
   location String
   source   String?
   url      String?
-  ats      String?
+
+  // NEW: required for composite unique
+  ats        String
+  externalId String
+
   postedAt DateTime @default(now())
+  closed   Boolean  @default(false)
 
   companyRel Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId  String
@@ -89,6 +88,10 @@ model Job {
   businessUnitId String?
 
   applications Application[]
+
+  // Keep BOTH of these inside the braces:
+  @@unique([ats, externalId])
+  @@index([companyId, postedAt])
 }
 
 model SearchEvent {

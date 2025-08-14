@@ -1,29 +1,48 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/lib/prisma';
 
-export async function GET(req: Request) {
+export const dynamic = 'force-dynamic';
+
+function toInt(v: string | null, d: number) {
+  const n = parseInt(v || '', 10);
+  return Number.isFinite(n) && n > 0 ? n : d;
+}
+
+export async function GET(req: Request, { params }: { params: { slug: string } }) {
   const url = new URL(req.url);
-  const qRaw = (url.searchParams.get("q") || "").trim();
-  const limit = Math.min(parseInt(url.searchParams.get("limit") || "8", 10), 20);
+  const page = toInt(url.searchParams.get('page'), 1);
+  const pageSize = Math.min(toInt(url.searchParams.get('pageSize'), 25), 100);
+  const skip = (page - 1) * pageSize;
 
-  if (qRaw.length < 2) {
-    return NextResponse.json({ items: [] });
+  const company = await prisma.company.findUnique({ where: { slug: params.slug } });
+  if (!company) {
+    return NextResponse.json({ ok: false, error: 'Company not found' }, { status: 404 });
   }
 
-  const q = qRaw;               // original (for name contains)
-  const qSlug = qRaw.toLowerCase(); // normalized (for slug contains)
+  const [rows, total] = await Promise.all([
+    prisma.job.findMany({
+      where: { companyId: company.id, closed: false },
+      orderBy: [{ postedAt: 'desc' }, { id: 'desc' }],
+      include: { businessUnit: true },
+      skip,
+      take: pageSize,
+    }),
+    prisma.job.count({ where: { companyId: company.id, closed: false } }),
+  ]);
 
-  const companies = await prisma.company.findMany({
-    where: {
-      OR: [
-        { slug: { contains: qSlug } }, 
-        { name: { contains: q } }, 
-      ],
-    },
-    select: { slug: true, name: true },
-    orderBy: { name: "asc" },
-    take: limit,
-  });
+  const jobs = rows.map(j => ({
+    id: j.id,
+    title: j.title,
+    location: j.location,
+    url: j.url ?? '',
+    postedAt: j.postedAt.toISOString(),
+    unit: j.businessUnit?.name,
+  }));
 
-  return NextResponse.json({ items: companies });
+  const hasNext = skip + jobs.length < total;
+
+  // Cache-busting headers so the client fetch never hangs on a stale entry
+  const res = NextResponse.json({ ok: true, page, pageSize, total, hasNext, jobs });
+  res.headers.set('Cache-Control', 'no-store, max-age=0');
+  return res;
 }

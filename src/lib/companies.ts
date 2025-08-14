@@ -1,55 +1,94 @@
 import { prisma } from "@/lib/prisma";
 
-export async function getCompanyBySlug(slug: string) {
+export type CompanyView = {
+  id: string;
+  slug: string;
+  name: string;
+  medianResponseDays: number | null;
+  businessUnits: {
+    name: string;
+    applications: number;
+    responses: number;
+    interviews: number;
+    offers: number;
+    medianResponseDays: number | null;
+  }[];
+  jobs: {
+    id: string;
+    title: string;
+    location: string;
+    postedAt: string;
+    url: string | null;
+    unit?: string;
+  }[];
+  kpis: {
+    overallResponseRate: number;
+    totalApplications: number;
+    medianResponseDays: number | null;
+  };
+  updatedAt: string;
+};
+
+export async function getCompanyBySlug(slug: string): Promise<CompanyView | null> {
   const s = (slug || "").toLowerCase();
 
   const company = await prisma.company.findUnique({
     where: { slug: s },
     include: {
       businessUnits: { orderBy: { name: "asc" } },
-      jobs: { orderBy: { postedAt: "desc" }, include: { businessUnit: true } },
+      jobs: {
+        where: { closed: false },
+        orderBy: { postedAt: 'desc' },
+        include: { businessUnit: true },
+        take: 25, // cap to something sane
+      },
     },
   });
 
   if (!company) return null;
 
-  // Derive KPIs from business units
-  const totals = company.businessUnits.reduce(
-    (acc, bu) => {
-      acc.apps += bu.applications;
-      acc.responses += bu.responses;
+  const businessUnits = company.businessUnits.map((u) => ({
+    name: u.name,
+    applications: u.applications,
+    responses: u.responses,
+    interviews: u.interviews,
+    offers: u.offers,
+    medianResponseDays: u.medianResponseDays,
+  }));
+
+  const totals = businessUnits.reduce(
+    (acc, u) => {
+      acc.applications += u.applications || 0;
+      acc.responses += u.responses || 0;
       return acc;
     },
-    { apps: 0, responses: 0 }
+    { applications: 0, responses: 0 }
   );
 
   const overallResponseRate =
-    totals.apps > 0 ? Math.round((totals.responses / totals.apps) * 100) : 0;
+    totals.applications > 0 ? Math.round((totals.responses / totals.applications) * 100) : 0;
+
+  const jobs = company.jobs.map((j) => ({
+    id: j.id,
+    title: j.title,
+    location: j.location,
+    postedAt: j.postedAt.toISOString(),
+    url: j.url,
+    unit: j.businessUnit?.name,
+  }));
 
   return {
+    id: company.id,
     slug: company.slug,
     name: company.name,
+    medianResponseDays: company.medianResponseDays,
+    businessUnits,
+    jobs,
     kpis: {
       overallResponseRate,
-      totalApplications: totals.apps,
-      medianResponseDays: company.medianResponseDays ?? 0,
+      totalApplications: totals.applications,
+      medianResponseDays: company.medianResponseDays,
     },
-    businessUnits: company.businessUnits.map((b) => ({
-      name: b.name,
-      applications: b.applications,
-      responses: b.responses,
-      interviews: b.interviews,
-      offers: b.offers,
-      medianResponseDays: b.medianResponseDays ?? 0,
-    })),
-    jobs: company.jobs.map((j) => ({
-      id: j.id,
-      title: j.title,
-      location: j.location,
-      postedAt: j.postedAt.toISOString(),
-      url: j.url,
-      unit: j.businessUnit?.name,
-    })),
     updatedAt: company.updatedAt.toISOString(),
   };
 }

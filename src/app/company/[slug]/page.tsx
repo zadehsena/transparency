@@ -13,6 +13,8 @@ type Props = {
   searchParams: Promise<Search>;
 };
 
+export const revalidate = 60;
+
 export async function generateMetadata({ params }: { params: Promise<Params> }) {
   const { slug } = await params;
   const company = await getCompanyBySlug(slug);
@@ -67,7 +69,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         {activeTab === "stats" ? (
           <CompanyStats businessUnits={company.businessUnits} />
         ) : (
-          <CompanyJobs jobs={company.jobs} />
+          <CompanyJobs slug={company.slug} initialJobs={company.jobs} />
         )}
       </div>
 

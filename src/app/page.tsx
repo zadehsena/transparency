@@ -37,9 +37,9 @@ async function getTrending(limit = 10) {
       const medianResponseDays =
         company.businessUnits.length > 0
           ? Math.round(
-              company.businessUnits.reduce((sum, bu) => sum + (bu.medianResponseDays || 0), 0) /
-                company.businessUnits.length
-            )
+            company.businessUnits.reduce((sum, bu) => sum + (bu.medianResponseDays || 0), 0) /
+            company.businessUnits.length
+          )
           : 0;
 
       return {
@@ -165,8 +165,11 @@ export default async function HomePage() {
             <ul className="divide-y">
               {trending.map((it) => (
                 <li key={it.slug} className="py-3">
-                  <Link href={`/company/${it.slug}`} className="block hover:underline">
-                    <div className="font-medium">{it.name}</div>
+                  <Link
+                    href={`/company/${it.slug}`}
+                    className="block hover:underline"
+                  >
+                    <div className="font-medium text-gray-900">{it.name}</div> {/* force dark */}
                     <div className="mt-1 grid grid-cols-3 gap-2 text-xs text-gray-500">
                       <div>
                         <div className="font-semibold">{it.overallResponseRate}%</div>
