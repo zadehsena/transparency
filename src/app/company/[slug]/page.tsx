@@ -69,7 +69,16 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         {activeTab === "stats" ? (
           <CompanyStats businessUnits={company.businessUnits} />
         ) : (
-          <CompanyJobs slug={company.slug} initialJobs={company.jobs} />
+          <CompanyJobs
+            slug={company.slug}
+            initialJobs={company.jobs}
+            buStats={company.businessUnits}
+            overall={{
+              overallResponseRate: company.kpis.overallResponseRate,
+              totalApplications: company.kpis.totalApplications,
+              medianResponseDays: company.kpis.medianResponseDays,
+            }}
+          />
         )}
       </div>
 
