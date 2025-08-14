@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <header className="border-b bg-white">
             <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
-              <Link href="/" className="text-xl font-semibold hover:opacity-80">
+              <Link href="/" className="text-xl font-semibold text-black hover:opacity-80">
                 Transparency
               </Link>
 
@@ -39,10 +39,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             </nav>
           </header>
 
-          {/* CHANGED: make main flex-1 so footer sits at bottom */}
           <main className="flex-1">{children}</main>
-
-          {/* ADDED: footer */}
+          
           <footer className="border-t bg-white">
             <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-gray-500 flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>© {new Date().getFullYear()} Transparency</div>
