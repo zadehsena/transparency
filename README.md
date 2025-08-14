@@ -49,13 +49,13 @@ npx prisma migrate dev --name init
 npx prisma studio
 ```
 
-### 4. Run the Dev Server
+### 4. Run the Dev Server:
 ```bash
 npm run dev
 ```
 Your app will be available at http://localhost:3000
 
-###5 Testing - Run Playwright E2E tests:
+### 5 Testing - Run Playwright E2E tests:
 ```bash
 npx playwright test
 ```
