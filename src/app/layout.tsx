@@ -29,7 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               <div className="flex items-center gap-3">
                 <Link
                   href="/jobs"
-                  className="rounded-lg border px-4 py-2 hover:bg-gray-50"
+                  className="inline-flex items-center rounded-lg border border-gray-900 px-4 py-2 text-gray-900 hover:bg-gray-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-900/20 transition-colors"
                 >
                   Jobs
                 </Link>
@@ -60,7 +60,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <ul className="mt-3 space-y-2 text-sm">
                     <li><Link href="/jobs" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Jobs</Link></li>
                     <li><Link href="/applications" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Your applications</Link></li>
-                    <li><Link href="/company/search" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Company search</Link></li>
                   </ul>
                 </div>
 
@@ -70,7 +69,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   <ul className="mt-3 space-y-2 text-sm">
                     <li><Link href="/about" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">About</Link></li>
                     <li><Link href="/contact" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Contact</Link></li>
-                    <li><Link href="/careers" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Careers</Link></li>
                   </ul>
                 </div>
 

@@ -9,7 +9,7 @@ test('home header changes when logged in', async ({ page, request }) => {
   expect([200, 409]).toContain(res.status());
 
   // Click the login link in the header
-  await page.getByRole('navigation').getByRole('link', { name: /log in/i }).click();
+  await page.getByRole('navigation').getByRole('link', { name: /log In/i }).click();
 
   await page.getByPlaceholder('Email').fill('e2e@example.com');
   await page.getByPlaceholder('Password').fill('test1234');
@@ -21,5 +21,5 @@ test('home header changes when logged in', async ({ page, request }) => {
 
   // Sign out works
   await page.getByRole('navigation').getByRole('button', { name: /sign out/i }).click();
-  await expect(page.getByRole('navigation').getByRole('link', { name: /log in/i })).toBeVisible();
+  await expect(page.getByRole('navigation').getByRole('link', { name: /log In/i })).toBeVisible();
 });

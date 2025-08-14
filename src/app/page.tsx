@@ -131,8 +131,8 @@ export default async function HomePage() {
             <a href="/signup" className="rounded-lg bg-black px-5 py-3 text-white hover:bg-gray-900">
               Get started
             </a>
-            <a href="/login" className="rounded-lg border px-5 py-3 hover:bg-gray-50">
-              Log in
+            <a href="/login" className="rounded-lg border px-5 py-3 hover:bg-gray-500">
+              Log In
             </a>
           </div>
           <p className="mt-3 text-sm text-gray-500">No credit card. Free to try.</p>

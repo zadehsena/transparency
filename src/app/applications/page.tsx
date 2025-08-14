@@ -10,7 +10,7 @@ export default async function ApplicationsPage() {
       <section className="mx-auto max-w-xl p-8">
         <p className="mb-4">Please log in to view your applications.</p>
         <Link href="/login" className="underline">
-          Log in
+          Log In
         </Link>
       </section>
     );
