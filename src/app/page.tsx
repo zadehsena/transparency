@@ -1,6 +1,8 @@
 import Image from "next/image"; // ← added for the hero image
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
+import CompanyLogo from '@/components/CompanyLogo';
+
 
 export const revalidate = 60; // cache for 1 minute
 
@@ -169,7 +171,10 @@ export default async function HomePage() {
                     href={`/company/${it.slug}`}
                     className="block hover:underline"
                   >
-                    <div className="font-medium text-gray-900">{it.name}</div> {/* force dark */}
+                    <div className="flex items-center gap-2">
+                      <CompanyLogo slug={it.slug} name={it.name} size={18} />
+                      <div className="font-medium text-gray-900">{it.name}</div>
+                    </div>
                     <div className="mt-1 grid grid-cols-3 gap-2 text-xs text-gray-500">
                       <div>
                         <div className="font-semibold">{it.overallResponseRate}%</div>
@@ -184,6 +189,7 @@ export default async function HomePage() {
                         <div>Median Response Days</div>
                       </div>
                     </div>
+
                   </Link>
                 </li>
               ))}
@@ -204,7 +210,10 @@ export default async function HomePage() {
               {topResponders.map((it) => (
                 <li key={it.slug} className="py-3">
                   <Link href={`/company/${it.slug}`} className="block hover:underline">
-                    <div className="font-medium">{it.name}</div>
+                    <div className="flex items-center gap-2">
+                      <CompanyLogo slug={it.slug} name={it.name} size={18} />
+                      <div className="font-medium text-gray-900">{it.name}</div>
+                    </div>
                     <div className="mt-1 grid grid-cols-2 gap-2 text-xs text-gray-500">
                       <div>
                         <div className="font-semibold">{it.responseRate}%</div>

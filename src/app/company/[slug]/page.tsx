@@ -4,6 +4,7 @@ import { getCompanyBySlug } from "@/lib/companies";
 import CompanyTabs from "@/components/CompanyTabs";
 import CompanyStats from "@/components/CompanyStats";
 import CompanyJobs from "@/components/CompanyJobs";
+import CompanyLogo from '@/components/CompanyLogo';
 
 type Params = { slug: string };
 type Search = { tab?: string };
@@ -38,7 +39,10 @@ export default async function CompanyPage({ params, searchParams }: Props) {
     <div className="mx-auto max-w-6xl p-4">
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{company.name}</h1>
+          <div className="flex items-center gap-2">
+            <CompanyLogo slug={company.slug} name={company.name} size={28} />
+            <h1 className="text-2xl font-semibold">{company.name}</h1>
+          </div>
           <p className="mt-1 text-sm text-gray-600">
             Real response rates by business unit + live job listings
           </p>
