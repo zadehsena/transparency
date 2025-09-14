@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import CompanyLogo from "./CompanyLogo";
 
 function slugifyCompany(raw: string) {
   return raw.trim().toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");
@@ -148,8 +149,13 @@ export default function HeaderSearch() {
               className={`cursor-pointer rounded px-3 py-2 text-sm ${i === highlight ? "bg-gray-100" : "hover:bg-gray-50"
                 }`}
             >
-              <div className="font-medium">{s.name}</div>
-              <div className="text-xs text-gray-500">{s.slug}</div>
+              <div className="flex items-center gap-2">
+                <CompanyLogo slug={s.slug} name={s.name} className="h-5 w-5" />
+                <div>
+                  <div className="font-medium">{s.name}</div>
+                  <div className="text-xs text-gray-500">{s.slug}</div>
+                </div>
+              </div>
             </li>
           ))}
         </ul>
