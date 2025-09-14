@@ -40,7 +40,8 @@ export async function PATCH(req: Request) {
   // ⬇️ Replace `any` with a loose record, then cast once at the end
   const nextProfile: Record<string, unknown> = {};
   const copy = (k: string) => {
-    if (k in body) (nextProfile as any)[k] = (body as any)[k]; // indexing only; not introducing `any` types
+    const b = body as Record<string, unknown>;
+    if (k in b) (nextProfile as Record<string, unknown>)[k] = b[k];
   };
   [
     "phone", "location", "visibility", "openToWork",
