@@ -35,6 +35,6 @@
     "typescript": "^5"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "node -r ts-node/register/transpile-only prisma/seed.js"
   }
 }

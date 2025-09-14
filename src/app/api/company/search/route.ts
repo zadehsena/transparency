@@ -1,48 +1,49 @@
-import { NextResponse } from 'next/server';
-import { prisma } from '@/lib/prisma';
+// src/app/api/company/search/route.ts
+import { NextResponse } from "next/server";
+import { prisma } from "@/lib/prisma";
 
-export const dynamic = 'force-dynamic';
+export const dynamic = "force-dynamic";
 
 function toInt(v: string | null, d: number) {
-  const n = parseInt(v || '', 10);
+  const n = parseInt(v || "", 10);
   return Number.isFinite(n) && n > 0 ? n : d;
 }
 
-export async function GET(req: Request, { params }: { params: { slug: string } }) {
+function titleCase(s: string) {
+  return s
+    .split(/\s+|-/g)
+    .filter(Boolean)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(" ");
+}
+
+export async function GET(req: Request) {
   const url = new URL(req.url);
-  const page = toInt(url.searchParams.get('page'), 1);
-  const pageSize = Math.min(toInt(url.searchParams.get('pageSize'), 25), 100);
-  const skip = (page - 1) * pageSize;
+  const qRaw = (url.searchParams.get("q") || "").trim();
+  const limit = Math.min(toInt(url.searchParams.get("limit"), 8), 20);
 
-  const company = await prisma.company.findUnique({ where: { slug: params.slug } });
-  if (!company) {
-    return NextResponse.json({ ok: false, error: 'Company not found' }, { status: 404 });
-  }
+  if (!qRaw) return NextResponse.json({ items: [] });
 
-  const [rows, total] = await Promise.all([
-    prisma.job.findMany({
-      where: { companyId: company.id, closed: false },
-      orderBy: [{ postedAt: 'desc' }, { id: 'desc' }],
-      include: { businessUnit: true },
-      skip,
-      take: pageSize,
-    }),
-    prisma.job.count({ where: { companyId: company.id, closed: false } }),
-  ]);
+  const qLower = qRaw.toLowerCase();
+  const variants = Array.from(new Set([qRaw, qLower, qRaw.toUpperCase(), titleCase(qRaw)]));
 
-  const jobs = rows.map(j => ({
-    id: j.id,
-    title: j.title,
-    location: j.location,
-    url: j.url ?? '',
-    postedAt: j.postedAt.toISOString(),
-    unit: j.businessUnit?.name,
-  }));
+  const companies = await prisma.company.findMany({
+    where: {
+      OR: [
+        // slug search (always lower)
+        { slug: { contains: qLower } },
+        // name search with a few common case variants
+        ...variants.map((v) => ({ name: { contains: v } })),
+      ],
+      // IMPORTANT: don't require jobs here, or freshly seeded companies won't appear
+      // jobs: { some: {} }  // ⟵ leave this OUT
+    },
+    select: { slug: true, name: true },
+    orderBy: [{ name: "asc" }],
+    take: limit,
+  });
 
-  const hasNext = skip + jobs.length < total;
-
-  // Cache-busting headers so the client fetch never hangs on a stale entry
-  const res = NextResponse.json({ ok: true, page, pageSize, total, hasNext, jobs });
-  res.headers.set('Cache-Control', 'no-store, max-age=0');
+  const res = NextResponse.json({ items: companies });
+  res.headers.set("Cache-Control", "no-store, max-age=0");
   return res;
 }
