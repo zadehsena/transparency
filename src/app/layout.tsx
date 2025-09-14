@@ -8,6 +8,9 @@ import HeaderSearch from "@/components/HeaderSearch"; // new
 export const metadata: Metadata = {
   title: "Transparency",
   description: "Job listings with real response rates.",
+  icons: {
+    icon: "/images/void.png",
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -40,7 +43,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           <main className="flex-1">{children}</main>
 
-          {/* FOOTER (drop-in replacement) */}
           <footer className="border-t bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-900/80 dark:border-gray-800">
             <div className="mx-auto max-w-6xl px-4 py-10">
               <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">

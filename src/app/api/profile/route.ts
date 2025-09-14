@@ -6,7 +6,7 @@ import { Prisma } from "@prisma/client"; // ✅ add this
 // Typed helper for queries that include profile
 type UserWithProfile = Prisma.UserGetPayload<{ include: { profile: true } }>;
 
-const getUserId = async () => "cme8lfogx000035kvz2ebyiyu";
+const getUserId = async () => "cmebiyl2h000235kd6vek3q5h";
 
 export async function GET() {
   const userId = await getUserId();
@@ -41,11 +41,11 @@ export async function PATCH(req: Request) {
     if (k in body) nextProfile[k] = body[k];
   };
   [
-    "phone","location","visibility","openToWork",
-    "website","linkedin","github","portfolio",
-    "yearsExperience","seniority","summary",
-    "desiredSalaryMin","desiredSalaryMax","salaryCurrency",
-    "remotePreference","willingToRelocate",
+    "phone", "location", "visibility", "openToWork",
+    "website", "linkedin", "github", "portfolio",
+    "yearsExperience", "seniority", "summary",
+    "desiredSalaryMin", "desiredSalaryMax", "salaryCurrency",
+    "remotePreference", "willingToRelocate",
   ].forEach(copy);
   if (Array.isArray(body.skills)) nextProfile.skills = body.skills;
   if (Array.isArray(body.industries)) nextProfile.industries = body.industries;
