@@ -118,8 +118,14 @@ export default function CompanyJobs({
       setJobs(prev => [...prev, ...(data.jobs || [])]);
       setPage(nextPage);
       setHasNext(Boolean(data.hasNext));
-    } catch (e: any) {
-      setError(e?.name === 'AbortError' ? 'Request timed out. Please try again.' : (e?.message || 'Failed to load more'));
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") {
+        setError("Request timed out. Please try again.");
+      } else if (e instanceof Error) {
+        setError(e.message || "Failed to load more");
+      } else {
+        setError("Failed to load more");
+      }
     } finally {
       clearTimeout(timeout);
       if (inflight.current === ac) inflight.current = null;

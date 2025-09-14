@@ -16,15 +16,6 @@ type BUStat = {
   medianResponseDays: number | null; // <- allow null
 };
 
-const Th = ({ children }: { children: React.ReactNode }) => (
-  <th className="border-b px-4 py-3 text-xs font-semibold uppercase tracking-wide text-gray-600">
-    {children}
-  </th>
-);
-const Td = ({ children }: { children: React.ReactNode }) => (
-  <td className="px-4 py-3 align-top text-sm">{children}</td>
-);
-
 export default function CompanyStats({ businessUnits }: { businessUnits: BUStat[] }) {
   return (
     <div>

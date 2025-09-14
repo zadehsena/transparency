@@ -70,9 +70,19 @@ export default function ProfilePage() {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
-  const tabFromUrl = (sp.get("tab") as TabKey) || "basic";
-  const [tab, setTab] = useState<TabKey>(TABS.includes(tabFromUrl as any) ? tabFromUrl : "basic");
-  useEffect(() => setTab(TABS.includes(tabFromUrl as any) ? tabFromUrl : "basic"), [tabFromUrl]);
+  function isTabKey(v: string | null): v is TabKey {
+    return !!v && TABS.includes(v as TabKey);
+  }
+
+  const raw = sp.get("tab");
+  const initialTab: TabKey = isTabKey(raw) ? raw : "basic";
+
+  const [tab, setTab] = useState<TabKey>(initialTab);
+  useEffect(() => {
+    const current = sp.get("tab");
+    setTab(isTabKey(current) ? current : "basic");
+  }, [sp]);
+
 
   const setTabInUrl = useCallback(
     (t: TabKey) => {
@@ -96,8 +106,8 @@ export default function ProfilePage() {
           setForm(data);
           setInitial(data);
         }
-      } catch (e: any) {
-        setError(e?.message ?? "Failed to load profile");
+      } catch (e: unknown) {
+        setError(e instanceof Error ? e.message : "Failed to load profile");
       } finally {
         if (active) setLoading(false);
       }
@@ -124,8 +134,8 @@ export default function ProfilePage() {
       const saved = (await res.json()) as ProfileDTO;
       setInitial(saved);
       setForm(saved);
-    } catch (e: any) {
-      setError(e?.message ?? "Save failed");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Save failed");
     } finally {
       setSaving(false);
     }
@@ -173,9 +183,8 @@ export default function ProfilePage() {
             role="tab"
             aria-selected={tab === t}
             onClick={() => setTabInUrl(t)}
-            className={`rounded-t-lg px-3 py-2 text-sm ${
-              tab === t ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"
-            }`}
+            className={`rounded-t-lg px-3 py-2 text-sm ${tab === t ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"
+              }`}
           >
             {TAB_LABEL[t]}
           </button>
@@ -240,7 +249,7 @@ export default function ProfilePage() {
               { value: "principal", label: "Principal" },
               { value: "lead", label: "Lead" },
             ]}
-            onChange={(v) => update("seniority", (v || null) as any)}
+            onChange={(v) => update("seniority", v ? (v as Seniority) : null)}
           />
           <Field label="Desired title" value={form.desiredTitle} onChange={(v) => update("desiredTitle", v)} />
         </div>
@@ -413,9 +422,8 @@ function Toggle({
         aria-pressed={checked}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${
-            checked ? "right-0.5" : "left-0.5"
-          }`}
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${checked ? "right-0.5" : "left-0.5"
+            }`}
         />
       </button>
     </label>

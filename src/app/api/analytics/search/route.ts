@@ -22,6 +22,8 @@ export async function POST(req: Request) {
 
     return NextResponse.json({ ok: true });
   } catch (e) {
+    console.error("POST /searchEvent failed:", e);
     return NextResponse.json({ ok: false }, { status: 500 });
   }
+
 }
