@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
-    "backfill:companies": "ts-node --compiler-options '{\"module\":\"commonjs\"}' scripts/backfill-companies.ts"
+    "backfill:companies": "ts-node --compiler-options '{\"module\":\"commonjs\"}' scripts/backfill-companies.ts",
+    "probe:companies": "ts-node --compiler-options '{\"module\":\"commonjs\"}' scripts/probe-companies.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.13.0",
