@@ -1,7 +1,7 @@
 // app/api/profile/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@prisma/client"; // ✅ add this
+import { Prisma } from "@prisma/client"; // ✅ keep
 
 // Typed helper for queries that include profile
 type UserWithProfile = Prisma.UserGetPayload<{ include: { profile: true } }>;
@@ -29,16 +29,18 @@ export async function PATCH(req: Request) {
   const userId = await getUserId();
   const body = await req.json().catch(() => ({}));
 
-  const nextUser: any = {};
+  // ⬇️ Replace `any` with proper Prisma type
+  const nextUser: Prisma.UserUpdateInput = {};
   if (typeof body.name === "string") nextUser.name = body.name.trim();
   if (typeof body.email === "string") nextUser.email = body.email.trim();
   if (Object.keys(nextUser).length) {
     await prisma.user.update({ where: { id: userId }, data: nextUser });
   }
 
-  const nextProfile: any = {};
+  // ⬇️ Replace `any` with a loose record, then cast once at the end
+  const nextProfile: Record<string, unknown> = {};
   const copy = (k: string) => {
-    if (k in body) nextProfile[k] = body[k];
+    if (k in body) (nextProfile as any)[k] = (body as any)[k]; // indexing only; not introducing `any` types
   };
   [
     "phone", "location", "visibility", "openToWork",
@@ -47,21 +49,27 @@ export async function PATCH(req: Request) {
     "desiredSalaryMin", "desiredSalaryMax", "salaryCurrency",
     "remotePreference", "willingToRelocate",
   ].forEach(copy);
-  if (Array.isArray(body.skills)) nextProfile.skills = body.skills;
-  if (Array.isArray(body.industries)) nextProfile.industries = body.industries;
-  if (Array.isArray(body.jobTypes)) nextProfile.jobTypes = body.jobTypes;
-  if (Array.isArray(body.preferredLocations)) nextProfile.preferredLocations = body.preferredLocations;
-  if (body.notifications && typeof body.notifications === "object") nextProfile.notifications = body.notifications;
+
+  if (Array.isArray(body.skills)) nextProfile.skills = body.skills as Prisma.InputJsonValue;
+  if (Array.isArray(body.industries)) nextProfile.industries = body.industries as Prisma.InputJsonValue;
+  if (Array.isArray(body.jobTypes)) nextProfile.jobTypes = body.jobTypes as Prisma.InputJsonValue;
+  if (Array.isArray(body.preferredLocations)) nextProfile.preferredLocations = body.preferredLocations as Prisma.InputJsonValue;
+  if (body.notifications && typeof body.notifications === "object") {
+    nextProfile.notifications = body.notifications as Prisma.InputJsonValue;
+  }
 
   await prisma.profile.upsert({
     where: { userId },
-    update: nextProfile,
-    create: { userId, ...nextProfile },
+    update: nextProfile as Prisma.ProfileUpdateInput,
+    create: {
+      ...(nextProfile as Prisma.ProfileCreateInput),
+      user: { connect: { id: userId } },
+    },
   });
 
   const user: UserWithProfile | null = await prisma.user.findUnique({
     where: { id: userId },
-    include: { profile: true }, // ✅
+    include: { profile: true },
   });
 
   const total = await prisma.application.count({ where: { userId } });

@@ -82,8 +82,9 @@ export async function POST() {
     }
 
     return NextResponse.json({ ok: true, results });
-  } catch (e: any) {
-    console.error('sync-jobs failed:', e);
-    return NextResponse.json({ ok: false, error: e?.message ?? 'Unknown error' }, { status: 500 });
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : "Unknown error";
+    console.error("sync-jobs failed:", e);
+    return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
