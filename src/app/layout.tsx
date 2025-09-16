@@ -1,9 +1,10 @@
 import "./globals.css";
 import type { Metadata } from "next";
-import Link from "next/link";
 import Providers from "@/components/Providers";
 import AuthButtons from "@/components/AuthButtons";
 import HeaderSearch from "@/components/HeaderSearch"; // new
+import Image from "next/image";
+import Link from "next/link";
 
 export const metadata: Metadata = {
   title: "Transparency",
@@ -20,10 +21,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <header className="border-b bg-white">
             <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
-              <Link href="/" className="text-xl font-semibold text-black hover:opacity-80">
-                Transparency
+              <Link href="/" className="flex items-center gap-2 hover:opacity-80">
+                <Image
+                  src="/images/void.png"
+                  alt="Transparency logo"
+                  width={28}
+                  height={28}
+                  className="h-7 w-7"
+                />
+                <span className="text-xl font-semibold text-black">Transparency</span>
               </Link>
-
               {/* Search Bar */}
               <div className="flex-1 max-w-xl">
                 <HeaderSearch />
@@ -69,8 +76,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Company</h3>
                   <ul className="mt-3 space-y-2 text-sm">
-                    <li><Link href="/about" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">About</Link></li>
-                    <li><Link href="/contact" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Contact</Link></li>
+                    <li>
+                      <Link
+                        href="/about"
+                        className="text-gray-600 hover:text-gray-900 hover:underline dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        About
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/contact"
+                        className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        Contact
+                      </Link>
+                    </li>
                   </ul>
                 </div>
 

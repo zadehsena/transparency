@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 
 export default function LoginModal({ onClose }: { onClose: () => void }) {
@@ -8,6 +8,21 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const emailRef = useRef<HTMLInputElement>(null);
+
+    useEffect(() => {
+        // Close on Escape
+        const onKey = (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose();
+        };
+        document.addEventListener("keydown", onKey);
+        return () => document.removeEventListener("keydown", onKey);
+    }, [onClose]);
+
+    useEffect(() => {
+        // Autofocus first field
+        emailRef.current?.focus();
+    }, []);
 
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -31,9 +46,21 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900">
-                <h2 className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-white">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={onClose} // 👈 clicking the backdrop closes
+            aria-modal="true"
+            role="dialog"
+            aria-labelledby="login-title"
+        >
+            <div
+                className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900"
+                onClick={(e) => e.stopPropagation()} // 👈 prevent backdrop close when clicking inside
+            >
+                <h2
+                    id="login-title"
+                    className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-white"
+                >
                     Log in to your account
                 </h2>
 
@@ -64,6 +91,7 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
                 {/* Credentials form */}
                 <form onSubmit={onSubmit} className="space-y-4">
                     <input
+                        ref={emailRef}
                         type="email"
                         placeholder="Email"
                         required

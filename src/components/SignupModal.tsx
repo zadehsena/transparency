@@ -37,8 +37,14 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900">
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={onClose} // 👈 click on backdrop closes
+        >
+            <div
+                className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900"
+                onClick={(e) => e.stopPropagation()} // 👈 prevent close when clicking inside
+            >
                 <h2 className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-white">
                     Create your account
                 </h2>
