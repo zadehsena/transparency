@@ -1,5 +1,7 @@
 // src/lib/jobs/greenhouse.ts
 import { fetchWithTimeout } from "@/lib/http";
+import type { JobCategory } from "@prisma/client";
+import { categorizeJobTitle } from "./classify";
 
 export type RawGreenhouseJob = {
   id: number;
@@ -30,12 +32,17 @@ export async function fetchGreenhouse(boardToken: string) {
   const data = (await res.json()) as { jobs?: RawGreenhouseJob[] };
   const jobs = data.jobs ?? [];
 
-  return jobs.map(j => ({
-    externalId: String(j.id),
-    title: j.title ?? "",
-    location: j.location?.name || "",
-    url: j.absolute_url,
-    postedAt: j.updated_at || j.created_at || new Date().toISOString(),
-    unit: pickUnit(j),
-  }));
+  return jobs.map(j => {
+    const category: JobCategory = categorizeJobTitle(j.title ?? "");
+
+    return {
+      externalId: String(j.id),
+      title: j.title ?? "",
+      location: j.location?.name || "",
+      url: j.absolute_url,
+      postedAt: j.updated_at || j.created_at || new Date().toISOString(),
+      unit: pickUnit(j),
+      category, // 👈 new field
+    };
+  });
 }

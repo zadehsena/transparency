@@ -66,32 +66,47 @@ model BusinessUnit {
   jobs Job[]
 }
 
+enum JobCategory {
+  software
+  data_analytics
+  product_management
+  design
+  devops_sre
+  security
+  qa
+  it_support
+  marketing
+  sales
+  operations
+  finance
+  hr
+  legal
+  other
+}
+
 model Job {
-  id       String  @id @default(cuid())
-  title    String
-  company  String
-  location String
-  source   String?
-  url      String?
-
-  // NEW: required for composite unique
-  ats        String
-  externalId String
-
-  postedAt DateTime @default(now())
-  closed   Boolean  @default(false)
-
-  companyRel Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId  String
-
-  businessUnit   BusinessUnit? @relation(fields: [businessUnitId], references: [id])
+  id            String        @id @default(cuid())
+  title         String
+  company       String
+  location      String
+  source        String?
+  url           String?
+  ats           String
+  externalId    String
+  postedAt      DateTime      @default(now())
+  closed        Boolean       @default(false)
+  companyRel    Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId     String
+  businessUnit  BusinessUnit? @relation(fields: [businessUnitId], references: [id])
   businessUnitId String?
+  applications  Application[]
 
-  applications Application[]
+  // NEW
+  category      JobCategory?  // nullable until we backfill
 
-  // Keep BOTH of these inside the braces:
   @@unique([ats, externalId])
   @@index([companyId, postedAt])
+  @@index([category, postedAt]) // helpful for filtering
 }
 
 model SearchEvent {

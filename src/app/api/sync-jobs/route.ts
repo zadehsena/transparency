@@ -4,6 +4,9 @@ import { prisma } from '@/lib/prisma';
 import { COMPANY_ATS } from '@/lib/jobs/companyAts';
 import { fetchGreenhouse } from '@/lib/jobs/greenhouse';
 import { fetchLever } from '@/lib/jobs/lever';
+// 👇 NEW
+import type { JobCategory } from '@prisma/client';
+import { categorizeJobTitle } from '@/lib/jobs/classify';
 
 export const dynamic = 'force-dynamic';
 
@@ -41,7 +44,8 @@ export async function POST(req: Request) {
         location?: string;
         url?: string | null;
         postedAt?: string | Date;
-        unit?: string | null; // optional BU name
+        unit?: string | null;               // optional BU name
+        category?: JobCategory | undefined; // 👈 NEW
       }> = [];
 
       try {
@@ -49,7 +53,6 @@ export async function POST(req: Request) {
           ? await fetchGreenhouse(cfg.token)
           : await fetchLever(cfg.token);
       } catch (err) {
-        // If fetch fails, skip closing to avoid nuking open jobs by mistake.
         results.push({ slug: cfg.slug, provider: cfg.provider, upserted: 0, closed: 0, note: `fetch failed: ${(err as Error)?.message ?? err}` });
         continue;
       }
@@ -65,6 +68,9 @@ export async function POST(req: Request) {
           ? await prisma.businessUnit.findFirst({ where: { companyId: company.id, name: r.unit }, select: { id: true } })
           : null;
 
+        // 👇 Ensure we always have a category (fallback to classifier)
+        const category: JobCategory | undefined = r.category ?? (categorizeJobTitle(r.title) as JobCategory);
+
         await prisma.job.upsert({
           where: { ats_externalId: { ats: cfg.provider, externalId: r.externalId } },
           update: {
@@ -77,6 +83,7 @@ export async function POST(req: Request) {
             companyId: company.id,
             businessUnitId: bu?.id ?? generalBu.id, // default to General
             closed: false,
+            category, // 👈 persist on update
           },
           create: {
             title: r.title,
@@ -90,15 +97,14 @@ export async function POST(req: Request) {
             companyId: company.id,
             businessUnitId: bu?.id ?? generalBu.id,
             closed: false,
+            category, // 👈 persist on create
           },
         });
 
         upserted++;
       }
 
-      // Close postings that disappeared — but only if we successfully fetched rows
-      // If rows.length === 0, we still proceed (company may truly have 0 openings).
-      // If you want to be extra safe, require a minimum number or add an allowlist per provider.
+      // Close postings that disappeared
       const toClose =
         rows
           ? await prisma.job.findMany({
@@ -127,4 +133,3 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, error: message }, { status: 500 });
   }
 }
-
