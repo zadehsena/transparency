@@ -38,19 +38,19 @@ export const LABEL: Record<JobCategory, string> = {
 };
 
 export const CATEGORY_ICONS: Record<JobCategory, string> = {
-    software: "/images/categories/data-analytics.png",
+    software: "/images/categories/software.png",
     data_analytics: "/images/categories/data-analytics.png",
-    product_management: "/images/categories/data-analytics.png",
-    design: "/images/categories/data-analytics.png",
-    devops_sre: "/images/categories/data-analytics.png",
-    security: "/images/categories/data-analytics.png",
-    qa: "/images/categories/data-analytics.png",
-    it_support: "/images/categories/data-analytics.png",
+    product_management: "/images/categories/product_management.png",
+    design: "/images/categories/design.png",
+    devops_sre: "/images/categories/devops_sre.png",
+    security: "/images/categories/security.png",
+    qa: "/images/categories/qa.png",
+    it_support: "/images/categories/it_support.png",
     marketing: "/images/categories/data-analytics.png",
     sales: "/images/categories/data-analytics.png",
     operations: "/images/categories/data-analytics.png",
     finance: "/images/categories/data-analytics.png",
     hr: "/images/categories/data-analytics.png",
     legal: "/images/categories/data-analytics.png",
-    other: "/images/categories/data-analytics.png",
+    other: "/images/categories/other.png",
 };
