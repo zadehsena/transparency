@@ -13,17 +13,19 @@ import {
 export const dynamic = "force-dynamic";
 
 export default async function JobsRegionIndex() {
-  // Count open jobs per region
+  // Get raw counts from DB (include NULL so we can bucket it consistently)
   const countsRaw = await prisma.job.groupBy({
     by: ["region"],
     where: { closed: false },
     _count: { _all: true },
   });
 
-  // Treat null/unknown as "global" so the tile still shows a number
-  const counts = Object.fromEntries(
-    countsRaw.map((c) => [String(c.region ?? "global"), c._count._all])
-  ) as Record<string, number>;
+  // Use DB results as-is; bucket NULL into "global"
+  const counts: Record<string, number> = {};
+  for (const row of countsRaw) {
+    const key = (row.region ?? "global") as string;
+    counts[key] = row._count._all;
+  }
 
   return (
     <section className="mx-auto max-w-5xl px-6 py-10">

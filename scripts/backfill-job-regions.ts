@@ -1,39 +1,47 @@
-import { PrismaClient } from "@prisma/client";
+/* eslint-disable no-console */
+import { PrismaClient, Region } from "@prisma/client";
+// Use *relative* import so ts-node works
 import { regionFromLocation } from "../src/lib/geo/regionFromLocation";
 
 const prisma = new PrismaClient();
+const BATCH_SIZE = 500;
 
 async function main() {
-    const batchSize = 200;
-    let totalUpdated = 0;
+    const startingNull = await prisma.job.count({ where: { region: null } });
+    console.log(`Jobs with NULL region (start): ${startingNull}`);
 
-    while (true) {
+    let processed = 0;
+    for (; ;) {
+        // Always fetch the *current* next batch of NULLs – no skip!
         const jobs = await prisma.job.findMany({
             where: { region: null },
-            take: batchSize,
+            select: { id: true, location: true },
+            orderBy: { id: "asc" },
+            take: BATCH_SIZE,
         });
+
         if (jobs.length === 0) break;
 
-        const tx = [];
-        for (const j of jobs) {
-            const region = regionFromLocation(j.location);
-            if (!region) continue; // <-- only enqueue if we found a region
-            tx.push(
-                prisma.job.update({
-                    where: { id: j.id },
-                    data: { region },
-                })
-            );
-        }
-
-        if (tx.length === 0) break; // nothing to update, stop looping
+        // Prepare updates (map location → region; fallback to "global")
+        const tx = jobs.map(({ id, location }) => {
+            const loc = (location ?? "").trim();
+            const r = regionFromLocation(loc) as Region | null | undefined;
+            const region: Region = r ?? "global";
+            return prisma.job.update({ where: { id }, data: { region } });
+        });
 
         await prisma.$transaction(tx);
-        totalUpdated += tx.length;
-        console.log(`Updated ${tx.length}, total ${totalUpdated}`);
+        processed += jobs.length;
+        const remaining = await prisma.job.count({ where: { region: null } });
+        console.log(`Updated ${processed} | Remaining NULL: ${remaining}`);
     }
 
-    console.log("✅ Backfill complete");
+    // Show post-backfill counts (all rows)
+    const after = await prisma.job.groupBy({ by: ["region"], _count: { _all: true } });
+    console.log("Counts by region after backfill:");
+    for (const row of after) console.log(row.region, row._count._all);
 }
 
-main().catch(console.error).finally(() => prisma.$disconnect());
+main()
+    .catch((e) => { console.error(e); process.exit(1); })
+    .finally(async () => { await prisma.$disconnect(); });
