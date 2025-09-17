@@ -1,4 +1,3 @@
-// src/app/jobs/[cat]/page.tsx
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -6,10 +5,11 @@ import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { CATEGORY_ORDER, LABEL, CATEGORY_ICONS } from "@/lib/jobs/categoryMeta";
+import { parseRegionParam, REGION_LABEL } from "@/lib/jobs/regionMeta";
 import type { JobCategory } from "@prisma/client";
 
 type PageProps = {
-    params: Promise<{ cat: string }>;
+    params: Promise<{ region: string; category: string }>;
     searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
 
@@ -35,13 +35,16 @@ const CAT_STYLES: Record<string, { badgeBg: string; badgeText: string; ring: str
     other: { badgeBg: "bg-gray-50 dark:bg-gray-800/50", badgeText: "text-gray-700 dark:text-gray-300", ring: "ring-gray-100 dark:ring-gray-800" },
 };
 
-export default async function JobsByCategory({ params, searchParams }: PageProps) {
-    const { cat } = await params;
+export default async function RegionCategoryList({ params, searchParams }: PageProps) {
+    const { region: regionParam, category } = await params;
     const sp = await searchParams;
 
-    const normalized = (cat || "").toLowerCase().replace(/-/g, "_");
+    const region = parseRegionParam(regionParam);
+    if (!region) redirect("/jobs");
+
+    const normalized = (category || "").toLowerCase().replace(/-/g, "_");
     const isValid = (CATEGORY_ORDER as string[]).includes(normalized);
-    if (!isValid) redirect("/jobs");
+    if (!isValid) redirect(`/jobs/${regionParam}`);
     const selected = normalized as JobCategory;
 
     const pageRaw = Array.isArray(sp?.page) ? sp.page[0] : sp?.page;
@@ -49,11 +52,11 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
     const offset = (pageNum - 1) * PAGE_SIZE;
 
     const total = await prisma.job.count({
-        where: { closed: false, category: selected },
+        where: { closed: false, region, category: selected },   // ← filter by region too
     });
 
     const jobs = await prisma.job.findMany({
-        where: { closed: false, category: selected },
+        where: { closed: false, region, category: selected },   // ← filter by region too
         orderBy: { postedAt: "desc" },
         skip: offset,
         take: PAGE_SIZE,
@@ -77,27 +80,6 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
         }
     }
 
-    async function applyAction(formData: FormData) {
-        "use server";
-        const jobId = String(formData.get("jobId") || "");
-        const session = await getServerSession(authOptions);
-        if (!session?.user?.email) redirect("/login");
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email! },
-            select: { id: true },
-        });
-        if (!user) redirect("/login");
-        const existing = await prisma.application.findFirst({
-            where: { userId: user.id, jobId },
-        });
-        if (!existing) {
-            await prisma.application.create({
-                data: { userId: user.id, jobId, status: "applied" },
-            });
-        }
-        redirect("/applications");
-    }
-
     const style = CAT_STYLES[selected] ?? CAT_STYLES.other;
     const headerCountText = `${total} ${total === 1 ? "job" : "jobs"}`;
 
@@ -117,7 +99,7 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
                     </div>
                     <div>
                         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-                            {LABEL[selected]} Jobs
+                            {LABEL[selected]} · {REGION_LABEL[region]}
                         </h1>
                         <p className="mt-1 text-gray-600 dark:text-gray-400">
                             {headerCountText} • Page {pageNum} of {Math.max(1, totalPages)}
@@ -126,7 +108,7 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
                 </div>
 
                 <Link
-                    href="/jobs"
+                    href={`/jobs/${encodeURIComponent(regionParam)}`}  // ← back to region categories
                     className="rounded-lg border px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/60"
                 >
                     ← All categories
@@ -136,7 +118,7 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
             {/* Results */}
             {jobs.length === 0 ? (
                 <p className="rounded-xl border bg-white p-6 text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
-                    No open roles in this category right now.
+                    No open roles in this category for {REGION_LABEL[region]} right now.
                 </p>
             ) : (
                 <ul className="grid gap-4">
@@ -152,7 +134,6 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
                                 className={`group relative rounded-xl border bg-white p-5 shadow-sm ring-1 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 ${style.ring}`}
                             >
                                 <div className="flex items-center justify-between gap-4">
-                                    {/* Job title + company/location */}
                                     <div className="min-w-0">
                                         <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">
                                             {job.title}
@@ -167,7 +148,6 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
                                         )}
                                     </div>
 
-                                    {/* Actions inline */}
                                     <div className="flex shrink-0 items-center gap-2">
                                         {job.url && (
                                             <Link
@@ -188,7 +168,26 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
                                                 Application
                                             </Link>
                                         ) : (
-                                            <form action={applyAction}>
+                                            <form action={async (formData) => {
+                                                "use server";
+                                                const jobId = String(formData.get("jobId") || "");
+                                                const session = await getServerSession(authOptions);
+                                                if (!session?.user?.email) redirect("/login");
+                                                const user = await prisma.user.findUnique({
+                                                    where: { email: session.user.email! },
+                                                    select: { id: true },
+                                                });
+                                                if (!user) redirect("/login");
+                                                const existing = await prisma.application.findFirst({
+                                                    where: { userId: user.id, jobId },
+                                                });
+                                                if (!existing) {
+                                                    await prisma.application.create({
+                                                        data: { userId: user.id, jobId, status: "applied" },
+                                                    });
+                                                }
+                                                redirect("/applications");
+                                            }}>
                                                 <input type="hidden" name="jobId" value={job.id} />
                                                 <button
                                                     type="submit"
@@ -201,7 +200,6 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
                                     </div>
                                 </div>
 
-                                {/* Hover accent */}
                                 <span className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition group-hover:ring-black/5 dark:group-hover:ring-white/10" />
                             </li>
                         );
@@ -213,7 +211,7 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
             {totalPages > 1 && (
                 <nav className="mt-10 flex items-center justify-center gap-2">
                     <Link
-                        href={`/jobs/${selected}?page=${Math.max(1, pageNum - 1)}`}
+                        href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${Math.max(1, pageNum - 1)}`}   // ← include region
                         aria-disabled={pageNum === 1}
                         className={`rounded-lg border px-3 py-2 text-sm transition ${pageNum === 1 ? "pointer-events-none opacity-50" : "hover:bg-gray-50 dark:hover:bg-gray-800/60"} dark:border-gray-800`}
                     >
@@ -229,10 +227,10 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
                             return (
                                 <Link
                                     key={p}
-                                    href={`/jobs/${selected}?page=${p}`}
+                                    href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${p}`}  // ← include region
                                     className={`rounded-lg border px-3 py-2 text-sm transition ${active
-                                            ? "bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100"
-                                            : "hover:bg-gray-50 dark:hover:bg-gray-800/60 dark:border-gray-800"
+                                        ? "bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100"
+                                        : "hover:bg-gray-50 dark:hover:bg-gray-800/60 dark:border-gray-800"
                                         }`}
                                 >
                                     {p}
@@ -241,7 +239,7 @@ export default async function JobsByCategory({ params, searchParams }: PageProps
                         })}
 
                     <Link
-                        href={`/jobs/${selected}?page=${Math.min(totalPages, pageNum + 1)}`}
+                        href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${Math.min(totalPages, pageNum + 1)}`} // ← include region
                         aria-disabled={pageNum === totalPages}
                         className={`rounded-lg border px-3 py-2 text-sm transition ${pageNum === totalPages ? "pointer-events-none opacity-50" : "hover:bg-gray-50 dark:hover:bg-gray-800/60"} dark:border-gray-800`}
                     >

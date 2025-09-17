@@ -47,7 +47,7 @@ model Company {
   medianResponseDays Int?
   updatedAt          DateTime @updatedAt
 
-  // --- New optional facts/KPIs ---
+  // --- Existing optional facts/KPIs ---
   employeesLow        Int?
   employeesHigh       Int?
   medianBaseSalaryUSD Int?
@@ -56,6 +56,14 @@ model Company {
   hqCity              String?
   overallResponseRate Int?     // 0–100
   totalApplications   Int?
+
+  // --- New fields for overview ---
+  industry       String?
+  hqCountry      String?
+  website        String?
+  stockTicker    String?
+  stockExchange  String?
+  revenueUSD     Int?
 
   businessUnits BusinessUnit[]
   jobs         Job[]
