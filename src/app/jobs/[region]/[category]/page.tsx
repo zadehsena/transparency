@@ -1,9 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
-import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { CATEGORY_ORDER, LABEL, CATEGORY_ICONS } from "@/lib/jobs/categoryMeta";
 import { parseRegionParam, REGION_LABEL } from "@/lib/jobs/regionMeta";
 import type { JobCategory } from "@prisma/client";
@@ -52,34 +50,17 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
     const offset = (pageNum - 1) * PAGE_SIZE;
 
     const total = await prisma.job.count({
-        where: { closed: false, region, category: selected },   // ← filter by region too
+        where: { closed: false, region, category: selected },
     });
 
     const jobs = await prisma.job.findMany({
-        where: { closed: false, region, category: selected },   // ← filter by region too
+        where: { closed: false, region, category: selected },
         orderBy: { postedAt: "desc" },
         skip: offset,
         take: PAGE_SIZE,
     });
 
     const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-
-    const session = await getServerSession(authOptions);
-    const appliedIds = new Set<string>();
-    if (session?.user?.email) {
-        const user = await prisma.user.findUnique({
-            where: { email: session.user.email },
-            select: { id: true },
-        });
-        if (user) {
-            const apps = await prisma.application.findMany({
-                where: { userId: user.id },
-                select: { jobId: true },
-            });
-            apps.forEach((a) => appliedIds.add(a.jobId));
-        }
-    }
-
     const style = CAT_STYLES[selected] ?? CAT_STYLES.other;
     const headerCountText = `${total} ${total === 1 ? "job" : "jobs"}`;
 
@@ -108,7 +89,7 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
                 </div>
 
                 <Link
-                    href={`/jobs/${encodeURIComponent(regionParam)}`}  // ← back to region categories
+                    href={`/jobs/${encodeURIComponent(regionParam)}`}
                     className="rounded-lg border px-3 py-2 text-sm text-gray-700 transition hover:bg-gray-50 dark:border-gray-800 dark:text-gray-300 dark:hover:bg-gray-800/60"
                 >
                     ← All categories
@@ -123,80 +104,65 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
             ) : (
                 <ul className="grid gap-4">
                     {jobs.map((job) => {
-                        const alreadyApplied = appliedIds.has(job.id);
                         const posted = job.postedAt
                             ? new Date(job.postedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
                             : undefined;
+
+                        // Placeholder transparency stats (replace when you have real data)
+                        const stats = {
+                            responseRate: "—",       // e.g., "28%"
+                            medianResponseDays: "—", // e.g., "7 days"
+                            interviewRate: "—",      // e.g., "12%"
+                            offerRate: "—",          // e.g., "3%"
+                        };
 
                         return (
                             <li
                                 key={job.id}
                                 className={`group relative rounded-xl border bg-white p-5 shadow-sm ring-1 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 ${style.ring}`}
                             >
-                                <div className="flex items-center justify-between gap-4">
+                                {/* whole card clickable */}
+                                {job.url && (
+                                    <a
+                                        href={job.url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="absolute inset-0"
+                                        aria-label={`Open job: ${job.title}`}
+                                    />
+                                )}
+
+                                {/* Top row: left = title/company/meta, right = compact stats */}
+                                <div className="flex items-start justify-between gap-4">
+                                    {/* LEFT */}
                                     <div className="min-w-0">
                                         <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">
                                             {job.title}
                                         </h2>
                                         <p className="mt-1 truncate text-sm text-gray-600 dark:text-gray-400">
                                             {job.company} {job.location ? `— ${job.location}` : ""}
+                                            {job.postedAt && (
+                                                <>
+                                                    {" "}<span className="mx-1 text-gray-400">•</span>{" "}
+                                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                        Posted {new Date(job.postedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                                                    </span>
+                                                </>
+                                            )}
                                         </p>
-                                        {posted && (
-                                            <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                                                Posted {posted}
-                                            </p>
-                                        )}
                                     </div>
 
-                                    <div className="flex shrink-0 items-center gap-2">
-                                        {job.url && (
-                                            <Link
-                                                href={job.url}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="rounded-lg border px-3 py-1.5 text-sm text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/60"
-                                            >
-                                                View
-                                            </Link>
-                                        )}
-
-                                        {alreadyApplied ? (
-                                            <Link
-                                                href="/applications"
-                                                className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm text-white transition hover:bg-black dark:bg-gray-100 dark:text-gray-900"
-                                            >
-                                                Application
-                                            </Link>
-                                        ) : (
-                                            <form action={async (formData) => {
-                                                "use server";
-                                                const jobId = String(formData.get("jobId") || "");
-                                                const session = await getServerSession(authOptions);
-                                                if (!session?.user?.email) redirect("/login");
-                                                const user = await prisma.user.findUnique({
-                                                    where: { email: session.user.email! },
-                                                    select: { id: true },
-                                                });
-                                                if (!user) redirect("/login");
-                                                const existing = await prisma.application.findFirst({
-                                                    where: { userId: user.id, jobId },
-                                                });
-                                                if (!existing) {
-                                                    await prisma.application.create({
-                                                        data: { userId: user.id, jobId, status: "applied" },
-                                                    });
-                                                }
-                                                redirect("/applications");
-                                            }}>
-                                                <input type="hidden" name="jobId" value={job.id} />
-                                                <button
-                                                    type="submit"
-                                                    className="rounded-lg bg-gray-900 px-3 py-1.5 text-sm text-white transition hover:bg-black dark:bg-gray-100 dark:text-gray-900"
-                                                >
-                                                    Apply
-                                                </button>
-                                            </form>
-                                        )}
+                                    {/* RIGHT: ultra-compact transparency stats (one line) */}
+                                    <div className="shrink-0 self-start text-xs text-gray-600 dark:text-gray-300">
+                                        <div className="flex items-center gap-3">
+                                            <span title="Response rate">RR: —</span>
+                                            <span className="opacity-40">•</span>
+                                            <span title="Median reply time">Median: —</span>
+                                            <span className="opacity-40">•</span>
+                                            <span title="Interview rate">IR: —</span>
+                                            <span className="opacity-40">•</span>
+                                            <span title="Offer rate">OR: —</span>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -211,7 +177,7 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
             {totalPages > 1 && (
                 <nav className="mt-10 flex items-center justify-center gap-2">
                     <Link
-                        href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${Math.max(1, pageNum - 1)}`}   // ← include region
+                        href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${Math.max(1, pageNum - 1)}`}
                         aria-disabled={pageNum === 1}
                         className={`rounded-lg border px-3 py-2 text-sm transition ${pageNum === 1 ? "pointer-events-none opacity-50" : "hover:bg-gray-50 dark:hover:bg-gray-800/60"} dark:border-gray-800`}
                     >
@@ -227,7 +193,7 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
                             return (
                                 <Link
                                     key={p}
-                                    href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${p}`}  // ← include region
+                                    href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${p}`}
                                     className={`rounded-lg border px-3 py-2 text-sm transition ${active
                                         ? "bg-gray-900 text-white border-gray-900 dark:bg-gray-100 dark:text-gray-900 dark:border-gray-100"
                                         : "hover:bg-gray-50 dark:hover:bg-gray-800/60 dark:border-gray-800"
@@ -239,7 +205,7 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
                         })}
 
                     <Link
-                        href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${Math.min(totalPages, pageNum + 1)}`} // ← include region
+                        href={`/jobs/${encodeURIComponent(regionParam)}/${selected}?page=${Math.min(totalPages, pageNum + 1)}`}
                         aria-disabled={pageNum === totalPages}
                         className={`rounded-lg border px-3 py-2 text-sm transition ${pageNum === totalPages ? "pointer-events-none opacity-50" : "hover:bg-gray-50 dark:hover:bg-gray-800/60"} dark:border-gray-800`}
                     >

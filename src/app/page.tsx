@@ -117,10 +117,10 @@ export default async function HomePage() {
 
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
-              href="/signup"
+              href="/jobs"
               className="rounded-lg bg-gray-900 px-5 py-3 text-white transition hover:bg-black dark:bg-gray-100 dark:text-gray-900"
             >
-              Get started
+              Jobs
             </Link>
             <Link
               href="/login"

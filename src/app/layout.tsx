@@ -37,12 +37,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
               </div>
 
               <div className="flex items-center gap-3">
-                <Link
-                  href="/jobs"
-                  className="inline-flex items-center rounded-lg border border-gray-900 px-4 py-2 text-gray-900 hover:bg-gray-900 hover:text-white focus:outline-none focus:ring-2 focus:ring-gray-900/20 transition-colors"
-                >
-                  Jobs
-                </Link>
                 <AuthButtons />
               </div>
             </nav>
