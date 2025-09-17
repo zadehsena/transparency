@@ -9,6 +9,7 @@
     "lint": "next lint",
     "backfill:companies": "ts-node --compiler-options '{\"module\":\"commonjs\"}' scripts/backfill-companies.ts",
     "probe:companies": "ts-node --compiler-options '{\"module\":\"commonjs\"}' scripts/probe-companies.ts",
+    "backfill:regions": "ts-node --compiler-options '{\"module\":\"commonjs\"}' scripts/backfill-job-regions.ts",
     "backfill:jobCategory": "tsx scripts/backfill-job-category.ts"
   },
   "dependencies": {

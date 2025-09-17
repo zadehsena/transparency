@@ -95,29 +95,41 @@ enum JobCategory {
   other
 }
 
-model Job {
-  id            String        @id @default(cuid())
-  title         String
-  company       String
-  location      String
-  source        String?
-  url           String?
-  ats           String
-  externalId    String
-  postedAt      DateTime      @default(now())
-  closed        Boolean       @default(false)
-  companyRel    Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId     String
-  businessUnit  BusinessUnit? @relation(fields: [businessUnitId], references: [id])
-  businessUnitId String?
-  applications  Application[]
+enum Region {
+  north_america
+  europe
+  asia
+  oceania
+  latin_america
+  middle_east
+  africa
+  remote
+  global
+}
 
-  // NEW
-  category      JobCategory?  // nullable until we backfill
+model Job {
+  id             String        @id @default(cuid())
+  title          String
+  company        String
+  location       String
+  source         String?
+  url            String?
+  ats            String
+  externalId     String
+  postedAt       DateTime      @default(now())
+  closed         Boolean       @default(false)
+  companyRel     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId      String
+  businessUnit   BusinessUnit? @relation(fields: [businessUnitId], references: [id])
+  businessUnitId String?
+  applications   Application[]
+  category       JobCategory?
+  region         Region?        // <-- remove @index here
 
   @@unique([ats, externalId])
   @@index([companyId, postedAt])
-  @@index([category, postedAt]) // helpful for filtering
+  @@index([category, postedAt])
+  @@index([region])              // <-- add the index at the model level
 }
 
 model SearchEvent {
