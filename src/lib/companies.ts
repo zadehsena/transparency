@@ -5,6 +5,15 @@ export type CompanyView = {
   slug: string;
   name: string;
   medianResponseDays: number | null;
+
+  // --- New facts ---
+  employeesLow?: number | null;
+  employeesHigh?: number | null;
+  medianBaseSalaryUSD?: number | null;
+  medianTCSalaryUSD?: number | null;
+  foundedYear?: number | null;
+  hqCity?: string | null;
+
   businessUnits: {
     name: string;
     applications: number;
@@ -38,16 +47,15 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
       businessUnits: { orderBy: { name: "asc" } },
       jobs: {
         where: { closed: false },
-        orderBy: { postedAt: 'desc' },
+        orderBy: { postedAt: "desc" },
         include: { businessUnit: true },
-        take: 25, // cap to something sane
+        take: 25,
       },
     },
   });
-
   if (!company) return null;
 
-  const businessUnits = company.businessUnits.map((u) => ({
+  const businessUnits = company.businessUnits.map(u => ({
     name: u.name,
     applications: u.applications,
     responses: u.responses,
@@ -68,7 +76,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
   const overallResponseRate =
     totals.applications > 0 ? Math.round((totals.responses / totals.applications) * 100) : 0;
 
-  const jobs = company.jobs.map((j) => ({
+  const jobs = company.jobs.map(j => ({
     id: j.id,
     title: j.title,
     location: j.location,
@@ -82,6 +90,15 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     slug: company.slug,
     name: company.name,
     medianResponseDays: company.medianResponseDays,
+
+    // --- Pass through facts (will be undefined/null if not set) ---
+    employeesLow: company.employeesLow ?? null,
+    employeesHigh: company.employeesHigh ?? null,
+    medianBaseSalaryUSD: company.medianBaseSalaryUSD ?? null,
+    medianTCSalaryUSD: company.medianTCSalaryUSD ?? null,
+    foundedYear: company.foundedYear ?? null,
+    hqCity: company.hqCity ?? null,
+
     businessUnits,
     jobs,
     kpis: {
@@ -92,6 +109,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     updatedAt: company.updatedAt.toISOString(),
   };
 }
+
 
 export async function getPopularCompanySlugs(limit = 50) {
   const rows = await prisma.company.findMany({

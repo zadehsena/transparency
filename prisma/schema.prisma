@@ -41,14 +41,25 @@ model User {
 }
 
 model Company {
-  id                 String         @id @default(cuid())
-  slug               String         @unique
+  id                 String   @id @default(cuid())
+  slug               String   @unique
   name               String
   medianResponseDays Int?
-  updatedAt          DateTime       @updatedAt
-  businessUnits      BusinessUnit[]
-  jobs               Job[]
-  searchEvents       SearchEvent[]
+  updatedAt          DateTime @updatedAt
+
+  // --- New optional facts/KPIs ---
+  employeesLow        Int?
+  employeesHigh       Int?
+  medianBaseSalaryUSD Int?
+  medianTCSalaryUSD   Int?
+  foundedYear         Int?
+  hqCity              String?
+  overallResponseRate Int?     // 0–100
+  totalApplications   Int?
+
+  businessUnits BusinessUnit[]
+  jobs         Job[]
+  searchEvents SearchEvent[]
 }
 
 model BusinessUnit {

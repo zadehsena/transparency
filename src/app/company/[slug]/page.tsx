@@ -4,7 +4,7 @@ import { getCompanyBySlug } from "@/lib/companies";
 import CompanyTabs from "@/components/CompanyTabs";
 import CompanyStats from "@/components/CompanyStats";
 import CompanyJobs from "@/components/CompanyJobs";
-import CompanyLogo from '@/components/CompanyLogo';
+import CompanyLogo from "@/components/CompanyLogo";
 
 type Params = { slug: string };
 type Search = { tab?: string };
@@ -14,6 +14,8 @@ type Props = {
   searchParams: Promise<Search>;
 };
 
+// While testing data changes, you can temporarily disable ISR:
+// export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<Params> }) {
@@ -24,6 +26,20 @@ export async function generateMetadata({ params }: { params: Promise<Params> }) 
     title: `${company.name} | Transparency`,
     description: `Application stats and job listings for ${company.name}.`,
   };
+}
+
+// --- small local formatters (no extra imports) ---
+function fmtInt(n?: number | null) {
+  return typeof n === "number" ? n.toLocaleString() : "—";
+}
+function fmtUSD(n?: number | null) {
+  return typeof n === "number" ? `$${n.toLocaleString()}` : "—";
+}
+function fmtRange(lo?: number | null, hi?: number | null) {
+  if (lo && hi) return `${fmtInt(lo)}–${fmtInt(hi)}`;
+  if (lo) return `~${fmtInt(lo)}`;
+  if (hi) return `≤${fmtInt(hi)}`;
+  return "—";
 }
 
 export default async function CompanyPage({ params, searchParams }: Props) {
@@ -37,6 +53,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
 
   return (
     <div className="mx-auto max-w-6xl p-4">
+      {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
           <div className="flex items-center gap-2">
@@ -47,28 +64,63 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             Real response rates by business unit + live job listings
           </p>
         </div>
-        <div className="flex gap-4 rounded-lg border bg-white p-3 text-sm">
+
+        {/* Facts + KPIs strip */}
+        <div className="flex flex-wrap items-stretch gap-4 rounded-lg border bg-white p-3 text-sm">
+          {/* Employees */}
+          <div>
+            <div className="text-gray-500">Employees</div>
+            <div className="font-medium">
+              {fmtRange(
+                company.employeesLow as number | undefined,
+                company.employeesHigh as number | undefined
+              )}
+            </div>
+          </div>
+          <div className="h-10 w-px bg-gray-200" />
+
+          {/* Existing KPIs */}
           <div>
             <div className="text-gray-500">Overall Response Rate</div>
             <div className="font-medium">{company.kpis.overallResponseRate}%</div>
           </div>
           <div className="h-10 w-px bg-gray-200" />
+
           <div>
             <div className="text-gray-500">Total Applications</div>
-            <div className="font-medium">
-              {company.kpis.totalApplications.toLocaleString()}
-            </div>
+            <div className="font-medium">{company.kpis.totalApplications.toLocaleString()}</div>
           </div>
           <div className="h-10 w-px bg-gray-200" />
+
           <div>
             <div className="text-gray-500">Median Response</div>
-            <div className="font-medium">{company.kpis.medianResponseDays} days</div>
+            <div className="font-medium">
+              {company.kpis.medianResponseDays != null ? `${company.kpis.medianResponseDays} days` : "—"}
+            </div>
           </div>
+
+          {/* Optional meta on the far right if you populated them */}
+          {(company.hqCity || company.foundedYear) && (
+            <>
+              <div className="h-10 w-px bg-gray-200" />
+              <div>
+                <div className="text-gray-500">HQ</div>
+                <div className="font-medium">{(company as any).hqCity ?? "—"}</div>
+              </div>
+              <div className="h-10 w-px bg-gray-200" />
+              <div>
+                <div className="text-gray-500">Founded</div>
+                <div className="font-medium">{(company as any).foundedYear ?? "—"}</div>
+              </div>
+            </>
+          )}
         </div>
       </div>
 
+      {/* Tabs */}
       <CompanyTabs active={activeTab} />
 
+      {/* Content */}
       <div className="mt-4">
         {activeTab === "stats" ? (
           <CompanyStats businessUnits={company.businessUnits} />
@@ -86,9 +138,17 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         )}
       </div>
 
+      {/* Footer */}
       <p className="mt-8 text-xs text-gray-500">
         Last updated: {new Date(company.updatedAt).toLocaleDateString()}
       </p>
+
+      {/* Dev-only payload peek (uncomment if debugging) */}
+      {process.env.NODE_ENV === "development" && false && (
+        <pre className="mt-4 max-h-64 overflow-auto rounded bg-gray-50 p-3 text-[11px] text-gray-600">
+          {JSON.stringify(company, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }
