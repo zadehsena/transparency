@@ -1,13 +1,15 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useSession } from "next-auth/react";
+import JobCard, { type JobCardJob, type JobCardStats } from "./JobCard";
 
 export type Job = {
   id: string;
   title: string;
   location: string;
-  postedAt: string; // ISO
-  url: string;
+  postedAt: string;
+  url?: string | null;
   unit?: string;
 };
 
@@ -47,6 +49,9 @@ export default function CompanyJobs({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const inflight = useRef<AbortController | null>(null);
+
+  const { status } = useSession();
+  const isAuthed = status === "authenticated";
 
   // Fast lookup for BU by name
   const buMap = useMemo(() => {
@@ -145,52 +150,23 @@ export default function CompanyJobs({
     <div>
       <ul className="space-y-3">
         {jobs.map((job) => {
-          const { initialRate, interviewRate, offerRate, medianDays } = getJobStats(job);
-          return (
-            <li key={job.id} className="rounded-2xl border bg-white p-5 hover:shadow-sm transition-shadow">
-              <a href={job.url} className="block" target="_blank" rel="noreferrer">
-                {/* Top row: title + posted */}
-                <div className="flex flex-wrap items-baseline justify-between gap-3">
-                  <div className="font-semibold text-gray-900 text-base md:text-lg">{job.title}</div>
-                  <div className="text-xs text-gray-500">
-                    Posted {new Date(job.postedAt).toLocaleDateString()}
-                  </div>
-                </div>
+          // Map to shared JobCard shape
+          const cardJob: JobCardJob = {
+            id: job.id,
+            title: job.title,
+            location: job.location ?? "—",
+            postedAt: job.postedAt,                 // already ISO
+            url: job.url ?? undefined,              // make optional
+            // We’re on a company page, so omit companyName
+            companyName: null,
+            // unit is optional in JobCard; include if you’d like:
+            // unit: job.unit ?? null,
+          };
 
-                {/* Sub row: unit • location */}
-                <div className="mt-1 text-sm text-gray-600">
-                  {job.unit ? <span className="font-medium text-gray-700">{job.unit}</span> : null}
-                  {job.unit ? ' • ' : null}
-                  <span>{job.location || '—'}</span>
-                </div>
-
-                {/* Stat chips */}
-                <div className="mt-3 flex flex-wrap gap-2 text-xs">
-                  <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1">
-                    <span className="uppercase tracking-wide text-gray-500">Initial response</span>
-                    <span className="font-medium text-gray-900">{initialRate}%</span>
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1">
-                    <span className="uppercase tracking-wide text-gray-500">Interview</span>
-                    <span className="font-medium text-gray-900">{interviewRate ?? '—'}{interviewRate !== null ? '%' : ''}</span>
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1">
-                    <span className="uppercase tracking-wide text-gray-500">Offer</span>
-                    <span className="font-medium text-gray-900">{offerRate ?? '—'}{offerRate !== null ? '%' : ''}</span>
-                  </span>
-
-                  <span className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1">
-                    <span className="uppercase tracking-wide text-gray-500">Median resp.</span>
-                    <span className="font-medium text-gray-900">{medianDays ?? '—'}{medianDays !== null ? ' days' : ''}</span>
-                  </span>
-                </div>
-              </a>
-            </li>
-          );
+          return <JobCard key={job.id} job={cardJob} stats={getJobStats(job)} isAuthed={isAuthed} />;
         })}
       </ul>
+
 
       <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
         <div>Showing {jobs.length}</div>

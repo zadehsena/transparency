@@ -1,15 +1,14 @@
-// src/app/jobs/[region]/[category]/page.tsx
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { prisma } from "@/lib/prisma";
 import { CATEGORY_ORDER, LABEL, CATEGORY_ICONS } from "@/lib/jobs/categoryMeta";
+import JobCard, { type JobCardJob, type JobCardStats } from "@/components/JobCard";
 import { parseRegionParam, REGION_LABEL } from "@/lib/jobs/regionMeta";
 import type { JobCategory } from "@prisma/client";
-
-// ✅ server-side session check
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+
 
 type PageProps = {
     params: Promise<{ region: string; category: string }>;
@@ -42,7 +41,6 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
     const { region: regionParam, category } = await params;
     const sp = await searchParams;
 
-    // 🔐 auth: logged in = unblurred stats; logged out = blurred with CTA chip
     const session = await getServerSession(authOptions);
     const isAuthed = !!session?.user;
 
@@ -106,89 +104,37 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
             </div>
 
             {/* Results */}
+            {/* Results */}
             {jobs.length === 0 ? (
                 <p className="rounded-xl border bg-white p-6 text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                     No open roles in this category for {REGION_LABEL[region]} right now.
                 </p>
             ) : (
-                <ul className="grid gap-4">
-                    {jobs.map((job) => {
-                        return (
-                            <li
-                                key={job.id}
-                                className={`group relative rounded-xl border bg-white p-5 shadow-sm ring-1 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 ${style.ring}`}
-                            >
-                                {/* whole card clickable */}
-                                {job.url && (
-                                    <a
-                                        href={job.url}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="absolute inset-0 z-0"
-                                        aria-label={`Open job: ${job.title}`}
-                                    />
-                                )}
+                <ul className="space-y-3">
+                    {jobs.map((j) => {
+                        const cardJob: JobCardJob = {
+                            id: j.id,
+                            title: j.title,
+                            location: j.location ?? "—",
+                            // Prisma Date -> ISO string (defensive):
+                            postedAt:
+                                (j.postedAt as unknown as Date)?.toISOString?.() ??
+                                (typeof j.postedAt === "string" ? j.postedAt : String(j.postedAt)),
+                            url: j.url ?? undefined,
+                            // if your Job model has a string `company` field, this will show it;
+                            // otherwise set to null or adapt as needed.
+                            companyName: (j as any).company ?? null,
+                        };
 
-                                {/* Top row: left = title/company/meta, right = compact stats */}
-                                <div className="flex items-start justify-between gap-4">
-                                    {/* LEFT */}
-                                    <div className="min-w-0">
-                                        <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">
-                                            {job.title}
-                                        </h2>
-                                        <p className="mt-1 truncate text-sm text-gray-600 dark:text-gray-400">
-                                            {job.company} {job.location ? `— ${job.location}` : ""}
-                                            {job.postedAt && (
-                                                <>
-                                                    {" "}
-                                                    <span className="mx-1 text-gray-400">•</span>{" "}
-                                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Posted{" "}
-                                                        {new Date(job.postedAt).toLocaleDateString(undefined, {
-                                                            year: "numeric",
-                                                            month: "short",
-                                                            day: "numeric",
-                                                        })}
-                                                    </span>
-                                                </>
-                                            )}
-                                        </p>
-                                    </div>
+                        // Region/category page does not compute real stats yet; pass placeholders.
+                        const stats: JobCardStats = {
+                            initialRate: null,
+                            interviewRate: null,
+                            offerRate: null,
+                            medianDays: null,
+                        };
 
-                                    {/* RIGHT: compact transparency stats with blur + CTA */}
-                                    <div className="relative z-10 shrink-0 self-start">
-                                        <div
-                                            className={`text-xs text-gray-600 dark:text-gray-300 transition ${isAuthed ? "" : "blur-[3px] select-none pointer-events-none"
-                                                }`}
-                                            aria-hidden={!isAuthed}
-                                        >
-                                            <div className="flex items-center gap-3">
-                                                <span title="Response rate">RR: —</span>
-                                                <span className="opacity-40">•</span>
-                                                <span title="Median reply time">Median: —</span>
-                                                <span className="opacity-40">•</span>
-                                                <span title="Interview rate">IR: —</span>
-                                                <span className="opacity-40">•</span>
-                                                <span title="Offer rate">OR: —</span>
-                                            </div>
-                                        </div>
-
-                                        {!isAuthed && (
-                                            <div className="absolute inset-0 flex items-center justify-center">
-                                                <Link
-                                                    href="/signup"
-                                                    className="pointer-events-auto rounded-md bg-black/70 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-sm underline decoration-white/60 underline-offset-2 hover:decoration-white"
-                                                >
-                                                    Sign in to unlock
-                                                </Link>
-                                            </div>
-                                        )}
-                                    </div>
-                                </div>
-
-                                <span className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition group-hover:ring-black/5 dark:group-hover:ring-white/10" />
-                            </li>
-                        );
+                        return <JobCard key={j.id} job={cardJob} isAuthed={isAuthed} />;
                     })}
                 </ul>
             )}
