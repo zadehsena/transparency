@@ -9,28 +9,50 @@ export const revalidate = 60; // cache for 1 minute
 // ---- UI helpers ----
 type Trend = "up" | "down" | "flat";
 
-function TrendIcon({ t }: { t: Trend }) {
-  const symbol = t === "up" ? "↑" : t === "down" ? "↓" : "↔";
-  const color =
-    t === "up" ? "text-emerald-600 dark:text-emerald-400"
-      : t === "down" ? "text-rose-600 dark:text-rose-400"
-        : "text-gray-500 dark:text-gray-400";
-  return <span aria-label={`trend-${t}`} className={`ml-1 ${color}`}>{symbol}</span>;
+function TrendIcon({
+  t,
+  className = "",
+  size = 14,
+}: {
+  t: Trend;
+  className?: string;
+  size?: number;
+}) {
+  const src =
+    t === "up"
+      ? "/images/trend/up.png"
+      : t === "down"
+        ? "/images/trend/down.png"
+        : "/images/trend/flat.png";
+
+  return (
+    <Image
+      src={src}
+      alt={`trend-${t}`}
+      width={size}
+      height={size}
+      className={`inline-block ${className}`}
+    />
+  );
 }
 
 function StatLine({ value, label, trend = "flat" }: { value: string | number; label: string; trend?: Trend }) {
   return (
     <div className="flex items-center whitespace-nowrap text-xs">
-      <span className="font-semibold text-gray-900 dark:text-gray-100">{value}</span>
+      <TrendIcon t={trend} /> {/* icon first */}
+      <span className="ml-1 font-semibold text-gray-900 dark:text-gray-100">{value}</span>
       <span className="ml-1 text-gray-600 dark:text-gray-400">{label}</span>
-      <TrendIcon t={trend} />
     </div>
   );
 }
 
 // ---- data: Most-searched (7d) ----
-async function getTrending(limit = 10) {
-  const since = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+// ---- data: Most-searched (window vs prior window) ----
+async function getTrending(limit = 10, windowDays = 7) {
+  const msDay = 24 * 60 * 60 * 1000;
+  const since = new Date(Date.now() - windowDays * msDay);
+  const prevSince = new Date(since.getTime() - windowDays * msDay);
+
   const rows = await prisma.searchEvent.groupBy({
     by: ["slug"],
     where: { createdAt: { gte: since } },
@@ -39,35 +61,66 @@ async function getTrending(limit = 10) {
     take: limit,
   });
 
-  const slugs = rows.map((r) => r.slug);
+  const prevRows = await prisma.searchEvent.groupBy({
+    by: ["slug"],
+    where: { createdAt: { gte: prevSince, lt: since } },
+    _count: { slug: true },
+  });
 
+  const prevMap = new Map(prevRows.map(r => [r.slug, r._count.slug]));
+
+  const slugs = rows.map(r => r.slug);
   const companies = await prisma.company.findMany({
     where: { slug: { in: slugs } },
     include: { businessUnits: true },
   });
 
-  return slugs
-    .map((slug) => {
-      const company = companies.find((c) => c.slug === slug);
+  return rows
+    .map((r) => {
+      const company = companies.find(c => c.slug === r.slug);
       if (!company) return null;
 
-      const totalApps = company.businessUnits.reduce((sum, bu) => sum + (bu.applications ?? 0), 0);
-      const totalResponses = company.businessUnits.reduce((sum, bu) => sum + (bu.responses ?? 0), 0);
+      // 👉 thresholds + trend logic goes here
+      const MIN_PREV = 1;        // was 3
+      const MIN_DELTA = 1;       // was 3
+      const MIN_PCT = 0.10;      // was 0.20
+
+      const curr = r._count.slug;
+      const prev = prevMap.get(r.slug) ?? 0;
+
+      let trendSearches: Trend = "flat";
+      if (prev >= MIN_PREV) {
+        const delta = curr - prev;
+        const pct = prev > 0 ? delta / prev : 0;
+
+        if (delta >= MIN_DELTA && pct >= MIN_PCT) {
+          trendSearches = "up";
+        } else if (-delta >= MIN_DELTA && -pct >= MIN_PCT) {
+          trendSearches = "down";
+        }
+      } else if (prev === 0 && curr >= 5) {
+        // treat clear breakouts from zero as "up" (tune 5 → 3/7 as you like)
+        trendSearches = "up";
+      }
+
+      const totalApps = company.businessUnits.reduce((s, bu) => s + (bu.applications ?? 0), 0);
+      const totalResponses = company.businessUnits.reduce((s, bu) => s + (bu.responses ?? 0), 0);
       const overallResponseRate = totalApps > 0 ? Math.round((totalResponses / totalApps) * 100) : 0;
 
-      const withMedians = company.businessUnits.filter((b) => b.medianResponseDays != null);
+      const withMedians = company.businessUnits.filter(b => b.medianResponseDays != null);
       const medianResponseDays =
         withMedians.length > 0
-          ? Math.round(withMedians.reduce((sum, bu) => sum + (bu.medianResponseDays || 0), 0) / withMedians.length)
+          ? Math.round(withMedians.reduce((s, bu) => s + (bu.medianResponseDays || 0), 0) / withMedians.length)
           : 0;
 
       return {
         slug: company.slug,
         name: company.name,
+        searches7d: curr,       // 👈 optional, lets you show search counts
         overallResponseRate,
         totalApplications: totalApps,
         medianResponseDays,
-        // NOTE: these are snapshot stats; without historicals they default to flat
+        trendSearches,          // 👈 return the computed trend
         trendOverall: "flat" as Trend,
         trendApps: "flat" as Trend,
         trendMedianDays: "flat" as Trend,
@@ -245,17 +298,15 @@ export default async function HomePage() {
               {trending.map((it) => (
                 <li key={it.slug} className="py-3">
                   <Link href={`/company/${it.slug}`} className="block">
-                    {/* mobile: stack; md+: inline */}
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                      {/* left: logo + name */}
+                      {/* left: logo + name + trend (based on searches) */}
                       <div className="flex min-w-0 items-center gap-2">
+                        <TrendIcon t={it.trendSearches} className="mx-2" />
                         <CompanyLogo slug={it.slug} name={it.name} size={18} />
-                        <div className="truncate font-medium text-gray-900 dark:text-gray-100">
-                          {it.name}
-                        </div>
+                        <div className="truncate font-medium text-gray-900 dark:text-gray-100">{it.name}</div>
                       </div>
 
-                      {/* right: stats (wrap on small screens) */}
+                      {/* right: stats */}
                       <div className="flex basis-full flex-wrap items-center gap-x-4 gap-y-1 text-xs md:basis-auto">
                         <StatLine value={`${it.overallResponseRate}%`} label="Overall Response" trend={it.trendOverall} />
                         <StatLine value={it.totalApplications} label="Total Applications" trend={it.trendApps} />
@@ -289,6 +340,7 @@ export default async function HomePage() {
                       <div className="flex min-w-0 items-center gap-2">
                         <CompanyLogo slug={it.slug} name={it.name} size={18} />
                         <div className="truncate font-medium text-gray-900 dark:text-gray-100">{it.name}</div>
+                        <TrendIcon t={it.trendResponse} />
                       </div>
 
                       <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 text-xs">
