@@ -113,6 +113,24 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
                     </button>
                 </form>
 
+                <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
+                    By continuing, you agree to our{" "}
+                    <a href="/terms" className="underline hover:text-gray-700 dark:hover:text-gray-200">
+                        Terms of Use
+                    </a>{" "}
+                    and{" "}
+                    <a href="/privacy" className="underline hover:text-gray-700 dark:hover:text-gray-200">
+                        Privacy Policy
+                    </a>.
+                </p>
+
+                <button
+                    onClick={onClose}
+                    className="mt-6 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                >
+                    Cancel
+                </button>
+
                 <button
                     onClick={onClose}
                     className="mt-6 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
