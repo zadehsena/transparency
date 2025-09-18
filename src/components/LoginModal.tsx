@@ -1,8 +1,8 @@
 "use client";
 
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
-import Image from "next/image";
 
 
 export default function LoginModal({ onClose }: { onClose: () => void }) {
@@ -11,9 +11,10 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
     const emailRef = useRef<HTMLInputElement>(null);
+    const router = useRouter();
+    const search = useSearchParams();
 
     useEffect(() => {
-        // Close on Escape
         const onKey = (e: KeyboardEvent) => {
             if (e.key === "Escape") onClose();
         };
@@ -22,9 +23,14 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
     }, [onClose]);
 
     useEffect(() => {
-        // Autofocus first field
         emailRef.current?.focus();
     }, []);
+
+    function getReturnUrl() {
+        const cb = search.get("callbackUrl");
+        if (cb) return cb;
+        return typeof window !== "undefined" ? window.location.href : "/";
+    }
 
     async function onSubmit(e: React.FormEvent) {
         e.preventDefault();
@@ -35,17 +41,20 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
             redirect: false,
             email,
             password,
+            callbackUrl: getReturnUrl(),
         });
 
-        if (res?.error) {
-            setError("Invalid email or password");
-            setLoading(false);
-            return;
+        if (res?.url) {
+            router.replace(res.url);
+        } else {
+            router.refresh();
         }
-
-        // credentials login succeeded -> reload page
-        window.location.href = "/";
+        onClose();
     }
+
+    const handleOAuth = (provider: "google" | "azure-ad") => {
+        signIn(provider, { callbackUrl: getReturnUrl() });
+    };
 
     return (
         <div
@@ -106,7 +115,7 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
                 {/* Social logins (neutral, with inline logos) */}
                 <div className="space-y-3">
                     <button
-                        onClick={() => signIn("google", { callbackUrl: "/" })}
+                        onClick={() => handleOAuth("google")}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                     >
                         {/* Google "G" */}
@@ -120,7 +129,7 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
                     </button>
 
                     <button
-                        onClick={() => signIn("azure-ad", { callbackUrl: "/" })}
+                        onClick={() => handleOAuth("azure-ad")}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                     >
                         {/* Outlook / Microsoft 365 */}

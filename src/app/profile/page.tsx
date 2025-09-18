@@ -1,88 +1,116 @@
+// src/app/profile/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
-/* ---------- Types (same DTO shape as your API) ---------- */
+/* =========================
+   Types / DTOs
+   ========================= */
 type Visibility = "everyone" | "employers" | "private";
-type RemotePreference = "remote" | "hybrid" | "onsite" | "noPreference";
-type Seniority = "intern" | "junior" | "mid" | "senior" | "staff" | "principal" | "lead";
 
-type ProfileDTO = {
+type Profile = {
   name: string;
   email: string;
   phone: string;
   location: string;
-  visibility: Visibility;
   openToWork: boolean;
-
-  website: string;
-  linkedin: string;
-  github: string;
-  portfolio: string;
-
-  yearsExperience: number | null;
-  seniority: Seniority | null;
-  skills: string[];
-  industries: string[];
-  summary: string;
-
-  desiredTitle: string;
-  desiredSalaryMin: number | null;
-  desiredSalaryMax: number | null;
-  salaryCurrency: string | null;
-  remotePreference: RemotePreference;
-  willingToRelocate: boolean;
-  jobTypes: string[];
-  preferredLocations: string[];
-
-  notifications: { jobMatches?: boolean; companyUpdates?: boolean };
-
-  stats: {
-    overallResponseRate: number;
-    totalApplications: number;
-    medianResponseDays: number | null;
-  };
+  visibility: Visibility;
+  website?: string;
+  linkedin?: string;
+  github?: string;
 };
 
-/* ---------- Tabs ---------- */
-const TABS = ["basic", "resume", "qualifications", "preferences", "notifications", "applications"] as const;
+type Application = {
+  id: string;
+  company: string;
+  title: string;
+  status: "applied" | "screen" | "interview" | "offer" | "rejected";
+  appliedAt: string;        // ISO
+  url?: string;
+  firstResponseAt?: string; // ISO (optional)
+};
+
+/* =========================
+   Tabs
+   ========================= */
+const TABS = ["profile", "applications"] as const;
 type TabKey = typeof TABS[number];
 const TAB_LABEL: Record<TabKey, string> = {
-  basic: "Basic Info",
-  resume: "Resume & Links",
-  qualifications: "Qualifications",
-  preferences: "Job Preferences",
-  notifications: "Notifications",
-  applications: "Application Insights",
+  profile: "Profile",
+  applications: "Applications",
 };
 
+function isTabKey(v: string | null): v is TabKey {
+  return !!v && TABS.includes(v as TabKey);
+}
+
+/* =========================
+   Helpers
+   ========================= */
+function computeAppStats(apps: Application[] | null | undefined) {
+  const list = Array.isArray(apps) ? apps : [];
+  const total = list.length;
+
+  const responded = list.filter(
+    (a) => a.status === "screen" || a.status === "interview" || a.status === "offer" || a.status === "rejected"
+  ).length;
+
+  const overallResponseRate = total ? Math.round((responded / total) * 100) : 0;
+
+  const diffs = list
+    .filter((a) => a.firstResponseAt)
+    .map((a) => {
+      const applied = new Date(a.appliedAt).getTime();
+      const first = new Date(a.firstResponseAt as string).getTime();
+      return Math.max(0, (first - applied) / (1000 * 60 * 60 * 24));
+    })
+    .sort((a, b) => a - b);
+
+  let medianResponseDays: number | null = null;
+  if (diffs.length) {
+    const mid = Math.floor(diffs.length / 2);
+    const m = diffs.length % 2 ? diffs[mid] : (diffs[mid - 1] + diffs[mid]) / 2;
+    medianResponseDays = Math.round(m * 10) / 10;
+  }
+
+  return { total, overallResponseRate, medianResponseDays };
+}
+
+function formatDate(iso: string) {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
+}
+
+/* =========================
+   Page
+   ========================= */
 export default function ProfilePage() {
-  const [form, setForm] = useState<ProfileDTO | null>(null);
-  const [initial, setInitial] = useState<ProfileDTO | null>(null);
+  const [form, setForm] = useState<Profile | null>(null);
+  const [initial, setInitial] = useState<Profile | null>(null);
+  const [apps, setApps] = useState<Application[] | null>(null);
+
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const isDirty = useMemo(() => form && initial && JSON.stringify(form) !== JSON.stringify(initial), [form, initial]);
+  const isDirty = useMemo(
+    () => form && initial && JSON.stringify(form) !== JSON.stringify(initial),
+    [form, initial]
+  );
 
-  // URL tab state (?tab=)
+  // URL tab state (?tab=profile|applications)
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
-  function isTabKey(v: string | null): v is TabKey {
-    return !!v && TABS.includes(v as TabKey);
-  }
-
-  const raw = sp.get("tab");
-  const initialTab: TabKey = isTabKey(raw) ? raw : "basic";
-
+  const initialTab: TabKey = isTabKey(sp.get("tab")) ? (sp.get("tab") as TabKey) : "profile";
   const [tab, setTab] = useState<TabKey>(initialTab);
+
   useEffect(() => {
     const current = sp.get("tab");
-    setTab(isTabKey(current) ? current : "basic");
+    setTab(isTabKey(current) ? current : "profile");
   }, [sp]);
-
 
   const setTabInUrl = useCallback(
     (t: TabKey) => {
@@ -94,20 +122,30 @@ export default function ProfilePage() {
     [router, pathname, sp]
   );
 
-  // Load
+  // Load profile + apps
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const res = await fetch("/api/profile", { cache: "no-store" });
-        if (!res.ok) throw new Error(await res.text());
-        const data = (await res.json()) as ProfileDTO;
-        if (active) {
-          setForm(data);
-          setInitial(data);
-        }
+        const [pRes, aRes] = await Promise.all([
+          fetch("/api/profile", { cache: "no-store" }),
+          fetch("/api/applications", { cache: "no-store" }),
+        ]);
+
+        if (!pRes.ok) throw new Error(await pRes.text());
+        if (!aRes.ok) throw new Error(await aRes.text());
+
+        const p = (await pRes.json()) as Profile;
+        const raw = await aRes.json();
+        const a: Application[] = Array.isArray(raw) ? raw : (raw?.applications ?? []);
+
+        if (!active) return;
+
+        setForm(p);
+        setInitial(p);
+        setApps(a);
       } catch (e: unknown) {
-        setError(e instanceof Error ? e.message : "Failed to load profile");
+        setError(e instanceof Error ? e.message : "Failed to load");
       } finally {
         if (active) setLoading(false);
       }
@@ -117,8 +155,8 @@ export default function ProfilePage() {
     };
   }, []);
 
-  const update = <K extends keyof ProfileDTO>(key: K, value: ProfileDTO[K]) =>
-    setForm((p) => (p ? { ...p, [key]: value } : p));
+  const update = <K extends keyof Profile>(key: K, value: Profile[K]) =>
+    setForm((prev) => (prev ? { ...prev, [key]: value } : prev));
 
   const patch = async () => {
     if (!form) return;
@@ -131,7 +169,7 @@ export default function ProfilePage() {
         body: JSON.stringify(form),
       });
       if (!res.ok) throw new Error(await res.text());
-      const saved = (await res.json()) as ProfileDTO;
+      const saved = (await res.json()) as Profile;
       setInitial(saved);
       setForm(saved);
     } catch (e: unknown) {
@@ -143,201 +181,150 @@ export default function ProfilePage() {
 
   if (loading || !form) {
     return (
-      <section className="mx-auto max-w-4xl p-8 space-y-4">
-        <div className="h-8 w-48 animate-pulse rounded bg-gray-200" />
-        <div className="h-4 w-72 animate-pulse rounded bg-gray-200" />
+      <section className="mx-auto max-w-6xl px-6 py-16 space-y-4">
+        <div className="h-8 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
+        <div className="h-4 w-72 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
       </section>
     );
   }
 
+  const { total, overallResponseRate, medianResponseDays } = computeAppStats(apps);
+
   return (
-    <section className="mx-auto max-w-4xl p-6 md:p-8 space-y-6">
+    <section className="mx-auto max-w-6xl px-6 py-16">
       {/* Header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="mb-8 flex items-start justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold">{form.name || "Your profile"}</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
+            {form.name || "Your profile"}
+          </h1>
+          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
+            Edit your info and track your applications.
+          </p>
         </div>
         <div className="flex gap-2">
           <button
-            className="rounded-lg border px-4 py-2 disabled:opacity-60"
+            className="rounded-lg border px-5 py-2 text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/60 disabled:opacity-60"
             onClick={() => setForm(initial)}
             disabled={!isDirty || saving}
           >
             Cancel
           </button>
           <button
-            className="rounded-lg bg-black px-4 py-2 text-white disabled:opacity-60"
+            className="rounded-lg bg-gray-900 px-5 py-2 text-white transition hover:bg-black dark:bg-gray-100 dark:text-gray-900 disabled:opacity-60"
             onClick={patch}
             disabled={!isDirty || saving}
           >
-            {saving ? "Saving..." : "Save changes"}
+            {saving ? "Saving…" : "Save changes"}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div role="tablist" aria-label="Profile sections" className="flex flex-wrap gap-2 border-b">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            role="tab"
-            aria-selected={tab === t}
-            onClick={() => setTabInUrl(t)}
-            className={`rounded-t-lg px-3 py-2 text-sm ${tab === t ? "bg-black text-white" : "text-gray-700 hover:bg-gray-100"
-              }`}
-          >
-            {TAB_LABEL[t]}
-          </button>
-        ))}
+      <div className="mb-6 flex flex-wrap gap-2">
+        {TABS.map((t) => {
+          const active = tab === t;
+          return (
+            <button
+              key={t}
+              role="tab"
+              aria-selected={active}
+              onClick={() => setTabInUrl(t)}
+              className={[
+                "rounded-lg px-3 py-2 text-sm transition",
+                active
+                  ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
+                  : "border text-gray-800 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/60",
+              ].join(" ")}
+            >
+              {TAB_LABEL[t]}
+            </button>
+          );
+        })}
       </div>
 
-      {error && (
-        <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>
-      )}
+      {/* CONTENT */}
+      <div className="space-y-8">
+        {/* Profile tab — minimal fields */}
+        <div role="tabpanel" hidden={tab !== "profile"}>
+          <div className="rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80 space-y-4">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+              <Field label="Full name" value={form.name} onChange={(v) => update("name", v)} required />
+              <Field label="Email" type="email" value={form.email} onChange={(v) => update("email", v)} required />
+              <Field label="Phone" value={form.phone} onChange={(v) => update("phone", v)} />
+              <Field label="Location" value={form.location} onChange={(v) => update("location", v)} placeholder="City, State" />
+            </div>
 
-      {/* Panels */}
-      <div role="tabpanel" hidden={tab !== "basic"} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Name" value={form.name} onChange={(v) => update("name", v)} required />
-          <Field label="Email" type="email" value={form.email} onChange={(v) => update("email", v)} required />
-          <Field label="Phone" value={form.phone} onChange={(v) => update("phone", v)} />
-          <Field label="Location" value={form.location} onChange={(v) => update("location", v)} placeholder="City, State, Zip" />
+            <Field label="Headline" value={form.headline ?? ""} onChange={(v) => update("headline", v)} placeholder="e.g., Backend Engineer" />
+
+            <Textarea label="Summary" value={form.summary ?? ""} onChange={(v) => update("summary", v)} placeholder="Short bio or highlights…" />
+
+            <TagInput
+              label="Skills"
+              values={form.skills ?? []}
+              onChange={(vals) => update("skills", vals)}
+              placeholder="Add a skill and press Enter"
+            />
+
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+              <Field label="Website" value={form.website ?? ""} onChange={(v) => update("website", v)} />
+              <Field label="LinkedIn" value={form.linkedin ?? ""} onChange={(v) => update("linkedin", v)} />
+              <Field label="GitHub" value={form.github ?? ""} onChange={(v) => update("github", v)} />
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <Toggle label="Open to work" checked={form.openToWork} onChange={(v) => update("openToWork", v)} />
+              <Select
+                label="Profile visibility"
+                value={form.visibility}
+                options={[
+                  { value: "everyone", label: "Everyone" },
+                  { value: "employers", label: "Employers only" },
+                  { value: "private", label: "Private" },
+                ]}
+                onChange={(v) => update("visibility", v as any)}
+              />
+            </div>
+          </div>
         </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <Toggle label="Open to work" checked={form.openToWork} onChange={(v) => update("openToWork", v)} />
-          <Select
-            label="Profile visibility"
-            value={form.visibility}
-            options={[
-              { value: "everyone", label: "Everyone" },
-              { value: "employers", label: "Employers only" },
-              { value: "private", label: "Private" },
-            ]}
-            onChange={(v) => update("visibility", v as Visibility)}
-          />
+        {/* Applications tab */}
+        <div role="tabpanel" hidden={tab !== "applications"}>
+          {/* Stats card — always visible */}
+          <div className="mb-6 rounded-2xl border bg-white p-6 text-center shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <StatCard label="Overall Response Rate" value={`${overallResponseRate}%`} />
+              <StatCard label="Total Applications" value={`${total}`} />
+              <StatCard
+                label="Median Response Time"
+                value={medianResponseDays == null ? "—" : `${medianResponseDays} days`}
+              />
+            </div>
+          </div>
+
+          {/* Table/list card */}
+          <div className="rounded-2xl border bg-white p-0 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
+            {!apps ? (
+              <div className="p-6 text-sm text-gray-600 dark:text-gray-400">Loading your applications…</div>
+            ) : apps.length === 0 ? (
+              <div className="p-6 text-sm text-gray-600 dark:text-gray-400">No applications yet.</div>
+            ) : (
+              <ApplicationTable apps={apps} />
+            )}
+          </div>
         </div>
       </div>
-
-      <div role="tabpanel" hidden={tab !== "resume"} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Field label="Website" value={form.website} onChange={(v) => update("website", v)} />
-          <Field label="LinkedIn" value={form.linkedin} onChange={(v) => update("linkedin", v)} />
-          <Field label="GitHub" value={form.github} onChange={(v) => update("github", v)} />
-          <Field label="Portfolio" value={form.portfolio} onChange={(v) => update("portfolio", v)} />
-        </div>
-      </div>
-
-      <div role="tabpanel" hidden={tab !== "qualifications"} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Field
-            label="Years of experience"
-            type="number"
-            value={form.yearsExperience == null ? "" : String(form.yearsExperience)}
-            onChange={(v) => update("yearsExperience", v ? Number(v) : null)}
-            min={0}
-          />
-          <Select
-            label="Seniority"
-            value={form.seniority ?? ""}
-            options={[
-              { value: "", label: "—" },
-              { value: "intern", label: "Intern" },
-              { value: "junior", label: "Junior" },
-              { value: "mid", label: "Mid" },
-              { value: "senior", label: "Senior" },
-              { value: "staff", label: "Staff" },
-              { value: "principal", label: "Principal" },
-              { value: "lead", label: "Lead" },
-            ]}
-            onChange={(v) => update("seniority", v ? (v as Seniority) : null)}
-          />
-          <Field label="Desired title" value={form.desiredTitle} onChange={(v) => update("desiredTitle", v)} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TagInput label="Skills" values={form.skills} onChange={(vals) => update("skills", vals)} placeholder="Add a skill and press Enter" />
-          <TagInput label="Industries" values={form.industries} onChange={(vals) => update("industries", vals)} placeholder="Add an industry and press Enter" />
-        </div>
-        <Textarea label="Summary" value={form.summary} onChange={(v) => update("summary", v)} placeholder="Short bio or highlights..." />
-      </div>
-
-      <div role="tabpanel" hidden={tab !== "preferences"} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Field
-            label="Min salary"
-            type="number"
-            value={form.desiredSalaryMin == null ? "" : String(form.desiredSalaryMin)}
-            onChange={(v) => update("desiredSalaryMin", v ? Number(v) : null)}
-            min={0}
-          />
-          <Field
-            label="Max salary"
-            type="number"
-            value={form.desiredSalaryMax == null ? "" : String(form.desiredSalaryMax)}
-            onChange={(v) => update("desiredSalaryMax", v ? Number(v) : null)}
-            min={0}
-          />
-          <Field label="Currency" value={form.salaryCurrency ?? "USD"} onChange={(v) => update("salaryCurrency", v)} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Select
-            label="Work setting"
-            value={form.remotePreference}
-            options={[
-              { value: "noPreference", label: "No preference" },
-              { value: "remote", label: "Remote" },
-              { value: "hybrid", label: "Hybrid" },
-              { value: "onsite", label: "On-site" },
-            ]}
-            onChange={(v) => update("remotePreference", v as RemotePreference)}
-          />
-          <Toggle label="Willing to relocate" checked={form.willingToRelocate} onChange={(v) => update("willingToRelocate", v)} />
-        </div>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <TagInput label="Job types" values={form.jobTypes} onChange={(vals) => update("jobTypes", vals)} placeholder="e.g., full-time, contract…" />
-          <TagInput label="Preferred locations" values={form.preferredLocations} onChange={(vals) => update("preferredLocations", vals)} placeholder="e.g., Remote, Raleigh NC…" />
-        </div>
-      </div>
-
-      <div role="tabpanel" hidden={tab !== "notifications"} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Toggle
-            label="Job match emails"
-            checked={!!form.notifications?.jobMatches}
-            onChange={(v) => update("notifications", { ...form.notifications, jobMatches: v })}
-          />
-          <Toggle
-            label="Company updates"
-            checked={!!form.notifications?.companyUpdates}
-            onChange={(v) => update("notifications", { ...form.notifications, companyUpdates: v })}
-          />
-        </div>
-      </div>
-
-      <div role="tabpanel" hidden={tab !== "applications"} className="space-y-4">
-        <div className="grid grid-cols-3 gap-4 text-center">
-          <StatCard label="Overall Response Rate" value={`${form.stats.overallResponseRate}%`} />
-          <StatCard label="Total Applications" value={String(form.stats.totalApplications)} />
-          <StatCard
-            label="Median Response Time"
-            value={form.stats.medianResponseDays == null ? "—" : `${form.stats.medianResponseDays} days`}
-          />
-        </div>
-        <p className="text-sm text-gray-600">
-          Tip: we can show your recent applications here and surface per-company response rates next.
-        </p>
-      </div>
-
-      {!isDirty && <p className="text-sm text-gray-500">All changes saved</p>}
     </section>
   );
 }
 
-/* ---------- Reusable UI ---------- */
+/* =========================
+   UI bits (home-page styling)
+   ========================= */
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg border p-4">
-      <p className="text-lg font-bold">{value}</p>
-      <p className="text-gray-500 text-sm">{label}</p>
+    <div className="rounded-xl border p-4 text-center dark:border-gray-800">
+      <p className="text-xl font-bold text-gray-900 dark:text-gray-100">{value}</p>
+      <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">{label}</p>
     </div>
   );
 }
@@ -349,7 +336,6 @@ function Field({
   type = "text",
   placeholder,
   required,
-  min,
 }: {
   label: string;
   value: string;
@@ -357,11 +343,10 @@ function Field({
   type?: string;
   placeholder?: string;
   required?: boolean;
-  min?: number;
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700">
+      <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
         {label}
         {required && " *"}
       </span>
@@ -371,33 +356,7 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
         required={required}
-        min={min}
-        className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-black/20"
-      />
-    </label>
-  );
-}
-
-function Textarea({
-  label,
-  value,
-  onChange,
-  placeholder,
-}: {
-  label: string;
-  value: string;
-  onChange: (v: string) => void;
-  placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700">{label}</span>
-      <textarea
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        rows={4}
-        className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-black/20"
+        className="w-full rounded-lg border px-3 py-2 outline-none ring-1 ring-transparent focus:ring-2 focus:ring-gray-900/20 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
       />
     </label>
   );
@@ -414,11 +373,12 @@ function Toggle({
 }) {
   return (
     <label className="flex items-center gap-3">
-      <span className="text-sm text-gray-800">{label}</span>
+      <span className="text-sm text-gray-800 dark:text-gray-200">{label}</span>
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`h-6 w-11 rounded-full border ${checked ? "bg-black" : "bg-gray-200"} relative transition-colors`}
+        className={`relative h-6 w-11 rounded-full border transition-colors dark:border-gray-700 ${checked ? "bg-gray-900" : "bg-gray-200 dark:bg-gray-800"
+          }`}
         aria-pressed={checked}
       >
         <span
@@ -443,11 +403,11 @@ function Select<T extends string>({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700">{label}</span>
+      <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
       <select
         value={value ?? ""}
         onChange={(e) => onChange(e.target.value as T | "")}
-        className="w-full rounded-lg border px-3 py-2 outline-none focus:ring-2 focus:ring-black/20"
+        className="w-full rounded-lg border px-3 py-2 outline-none ring-1 ring-transparent focus:ring-2 focus:ring-gray-900/20 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
       >
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -455,6 +415,82 @@ function Select<T extends string>({
           </option>
         ))}
       </select>
+    </label>
+  );
+}
+
+/* =========================
+   Applications Table
+   ========================= */
+function ApplicationTable({ apps }: { apps: Application[] }) {
+  return (
+    <div className="overflow-x-auto">
+      <table className="w-full text-sm">
+        <thead>
+          <tr className="border-b bg-gray-50 text-left dark:border-gray-800 dark:bg-gray-950">
+            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">Company</th>
+            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">Title</th>
+            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">Status</th>
+            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">Applied</th>
+            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">First Response</th>
+            <th className="px-4 py-3"></th>
+          </tr>
+        </thead>
+        <tbody className="divide-y dark:divide-gray-800">
+          {apps.map((a) => (
+            <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-950/60">
+              <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{a.company}</td>
+              <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{a.title}</td>
+              <td className="px-4 py-3 capitalize text-gray-700 dark:text-gray-300">{a.status}</td>
+              <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(a.appliedAt)}</td>
+              <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                {a.firstResponseAt ? formatDate(a.firstResponseAt) : "—"}
+              </td>
+              <td className="px-4 py-3 text-right">
+                {a.url ? (
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-900 underline underline-offset-2 hover:no-underline dark:text-gray-100"
+                  >
+                    View
+                  </a>
+                ) : (
+                  <span className="text-gray-400">—</span>
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function Textarea({
+  label,
+  value,
+  onChange,
+  placeholder,
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  return (
+    <label className="block">
+      <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+        {label}
+      </span>
+      <textarea
+        value={value ?? ""}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        rows={4}
+        className="w-full rounded-lg border px-3 py-2 outline-none ring-1 ring-transparent focus:ring-2 focus:ring-gray-900/20 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
+      />
     </label>
   );
 }
@@ -486,14 +522,19 @@ function TagInput({
 
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-gray-700">{label}</label>
-      <div className="flex flex-wrap items-center gap-2 rounded-lg border p-2">
+      <label className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">
+        {label}
+      </label>
+      <div className="flex flex-wrap items-center gap-2 rounded-lg border p-2 dark:border-gray-800">
         {values.map((v, i) => (
-          <span key={`${v}-${i}`} className="flex items-center gap-1 rounded-full border px-2 py-1 text-sm">
+          <span
+            key={`${v}-${i}`}
+            className="flex items-center gap-1 rounded-full border px-2 py-1 text-sm dark:border-gray-700"
+          >
             {v}
             <button
               type="button"
-              className="text-gray-500 hover:text-black"
+              className="text-gray-500 hover:text-black dark:text-gray-400 dark:hover:text-gray-200"
               onClick={() => remove(i)}
               aria-label={`Remove ${v}`}
             >
@@ -502,7 +543,7 @@ function TagInput({
           </span>
         ))}
         <input
-          className="flex-1 min-w-[140px] outline-none"
+          className="flex-1 min-w-[140px] bg-transparent outline-none"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

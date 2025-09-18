@@ -46,43 +46,36 @@ model Company {
   name               String
   medianResponseDays Int?
   updatedAt          DateTime @updatedAt
-
-  // --- Existing optional facts/KPIs ---
   employeesLow        Int?
   employeesHigh       Int?
   medianBaseSalaryUSD Int?
   medianTCSalaryUSD   Int?
   foundedYear         Int?
   hqCity              String?
-  overallResponseRate Int?     // 0–100
+  overallResponseRate Int?
   totalApplications   Int?
-
-  // --- New fields for overview ---
-  industry       String?
-  hqCountry      String?
-  website        String?
-  stockTicker    String?
-  stockExchange  String?
-  revenueUSD     Int?
-
-  businessUnits BusinessUnit[]
-  jobs         Job[]
-  searchEvents SearchEvent[]
+  industry            String?
+  hqCountry           String?
+  website             String?
+  stockTicker         String?
+  stockExchange       String?
+  revenueUSD          Int?
+  businessUnits       BusinessUnit[]
+  jobs                Job[]
+  searchEvents        SearchEvent[]
 }
 
 model BusinessUnit {
-  id                 String @id @default(cuid())
+  id                 String  @id @default(cuid())
   name               String
-  applications       Int    @default(0)
-  responses          Int    @default(0)
-  interviews         Int    @default(0)
-  offers             Int    @default(0)
+  applications       Int     @default(0)
+  responses          Int     @default(0)
+  interviews         Int     @default(0)
+  offers             Int     @default(0)
   medianResponseDays Int?
-
-  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  companyId String
-
-  jobs Job[]
+  company            Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  companyId          String
+  jobs               Job[]
 }
 
 enum JobCategory {
@@ -132,12 +125,11 @@ model Job {
   businessUnitId String?
   applications   Application[]
   category       JobCategory?
-  region         Region?        // <-- remove @index here
-
+  region         Region?
   @@unique([ats, externalId])
   @@index([companyId, postedAt])
   @@index([category, postedAt])
-  @@index([region])              // <-- add the index at the model level
+  @@index([region])
 }
 
 model SearchEvent {
@@ -146,22 +138,23 @@ model SearchEvent {
   slug      String
   companyId String?
   createdAt DateTime @default(now())
-
-  company Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
-
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
   @@index([slug, createdAt])
   @@index([createdAt])
 }
 
 model Application {
-  id        String            @id @default(cuid())
-  userId    String
-  jobId     String
-  status    ApplicationStatus @default(applied)
-  createdAt DateTime          @default(now())
-
-  user User @relation(fields: [userId], references: [id])
-  job  Job  @relation(fields: [jobId], references: [id])
+  id              String            @id @default(cuid())
+  userId          String
+  jobId           String
+  status          ApplicationStatus @default(applied)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  firstResponseAt DateTime?
+  user            User              @relation(fields: [userId], references: [id])
+  job             Job               @relation(fields: [jobId], references: [id])
+  @@index([userId, createdAt])
+  @@index([status])
 }
 
 enum ApplicationStatus {
@@ -171,48 +164,33 @@ enum ApplicationStatus {
   rejected
 }
 
-/**
- * New profile
- */
 model Profile {
-  userId     String     @id
-  phone      String?
-  location   String?
-  openToWork Boolean    @default(true)
-  visibility Visibility @default(everyone)
-
-  // Links & resume
-  website   String?
-  linkedin  String?
-  github    String?
-  portfolio String?
-
-  // Qualifications
-  yearsExperience Int?
-  seniority       Seniority?
-  skills          Json?
-  industries      Json?
-  summary         String?
-
-  // Job preferences
-  desiredSalaryMin   Int?
-  desiredSalaryMax   Int?
-  salaryCurrency     String?
-  remotePreference   RemotePreference @default(noPreference)
-  willingToRelocate  Boolean?         @default(false)
-  jobTypes           Json?
+  userId            String     @id
+  phone             String?
+  location          String?
+  openToWork        Boolean    @default(true)
+  visibility        Visibility @default(everyone)
+  website           String?
+  linkedin          String?
+  github            String?
+  portfolio         String?
+  headline          String?
+  yearsExperience   Int?
+  seniority         Seniority?
+  skills            Json?
+  industries        Json?
+  summary           String?
+  desiredSalaryMin  Int?
+  desiredSalaryMax  Int?
+  salaryCurrency    String?
+  remotePreference  RemotePreference @default(noPreference)
+  willingToRelocate Boolean?         @default(false)
+  jobTypes          Json?
   preferredLocations Json?
-
-  // Notifications
-  notifications Json?
-
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications     Json?
+  updatedAt         DateTime   @updatedAt
+  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-
-
 
 model ContactMessage {
   id        String   @id @default(cuid())
@@ -220,6 +198,6 @@ model ContactMessage {
   email     String
   subject   String
   message   String
-  ip        String?        // no @db.VarChar on SQLite
+  ip        String?
   createdAt DateTime @default(now())
 }
