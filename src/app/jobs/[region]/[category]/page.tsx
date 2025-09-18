@@ -1,3 +1,4 @@
+// src/app/jobs/[region]/[category]/page.tsx
 import Link from "next/link";
 import Image from "next/image";
 import { redirect } from "next/navigation";
@@ -5,6 +6,10 @@ import { prisma } from "@/lib/prisma";
 import { CATEGORY_ORDER, LABEL, CATEGORY_ICONS } from "@/lib/jobs/categoryMeta";
 import { parseRegionParam, REGION_LABEL } from "@/lib/jobs/regionMeta";
 import type { JobCategory } from "@prisma/client";
+
+// ✅ server-side session check
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
 type PageProps = {
     params: Promise<{ region: string; category: string }>;
@@ -36,6 +41,10 @@ const CAT_STYLES: Record<string, { badgeBg: string; badgeText: string; ring: str
 export default async function RegionCategoryList({ params, searchParams }: PageProps) {
     const { region: regionParam, category } = await params;
     const sp = await searchParams;
+
+    // 🔐 auth: logged in = unblurred stats; logged out = blurred with CTA chip
+    const session = await getServerSession(authOptions);
+    const isAuthed = !!session?.user;
 
     const region = parseRegionParam(regionParam);
     if (!region) redirect("/jobs");
@@ -104,18 +113,6 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
             ) : (
                 <ul className="grid gap-4">
                     {jobs.map((job) => {
-                        const posted = job.postedAt
-                            ? new Date(job.postedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })
-                            : undefined;
-
-                        // Placeholder transparency stats (replace when you have real data)
-                        const stats = {
-                            responseRate: "—",       // e.g., "28%"
-                            medianResponseDays: "—", // e.g., "7 days"
-                            interviewRate: "—",      // e.g., "12%"
-                            offerRate: "—",          // e.g., "3%"
-                        };
-
                         return (
                             <li
                                 key={job.id}
@@ -127,7 +124,7 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
                                         href={job.url}
                                         target="_blank"
                                         rel="noopener noreferrer"
-                                        className="absolute inset-0"
+                                        className="absolute inset-0 z-0"
                                         aria-label={`Open job: ${job.title}`}
                                     />
                                 )}
@@ -143,26 +140,49 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
                                             {job.company} {job.location ? `— ${job.location}` : ""}
                                             {job.postedAt && (
                                                 <>
-                                                    {" "}<span className="mx-1 text-gray-400">•</span>{" "}
+                                                    {" "}
+                                                    <span className="mx-1 text-gray-400">•</span>{" "}
                                                     <span className="text-xs text-gray-500 dark:text-gray-400">
-                                                        Posted {new Date(job.postedAt).toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" })}
+                                                        Posted{" "}
+                                                        {new Date(job.postedAt).toLocaleDateString(undefined, {
+                                                            year: "numeric",
+                                                            month: "short",
+                                                            day: "numeric",
+                                                        })}
                                                     </span>
                                                 </>
                                             )}
                                         </p>
                                     </div>
 
-                                    {/* RIGHT: ultra-compact transparency stats (one line) */}
-                                    <div className="shrink-0 self-start text-xs text-gray-600 dark:text-gray-300">
-                                        <div className="flex items-center gap-3">
-                                            <span title="Response rate">RR: —</span>
-                                            <span className="opacity-40">•</span>
-                                            <span title="Median reply time">Median: —</span>
-                                            <span className="opacity-40">•</span>
-                                            <span title="Interview rate">IR: —</span>
-                                            <span className="opacity-40">•</span>
-                                            <span title="Offer rate">OR: —</span>
+                                    {/* RIGHT: compact transparency stats with blur + CTA */}
+                                    <div className="relative z-10 shrink-0 self-start">
+                                        <div
+                                            className={`text-xs text-gray-600 dark:text-gray-300 transition ${isAuthed ? "" : "blur-[3px] select-none pointer-events-none"
+                                                }`}
+                                            aria-hidden={!isAuthed}
+                                        >
+                                            <div className="flex items-center gap-3">
+                                                <span title="Response rate">RR: —</span>
+                                                <span className="opacity-40">•</span>
+                                                <span title="Median reply time">Median: —</span>
+                                                <span className="opacity-40">•</span>
+                                                <span title="Interview rate">IR: —</span>
+                                                <span className="opacity-40">•</span>
+                                                <span title="Offer rate">OR: —</span>
+                                            </div>
                                         </div>
+
+                                        {!isAuthed && (
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <Link
+                                                    href="/signup"
+                                                    className="pointer-events-auto rounded-md bg-black/70 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-sm underline decoration-white/60 underline-offset-2 hover:decoration-white"
+                                                >
+                                                    Sign in to unlock
+                                                </Link>
+                                            </div>
+                                        )}
                                     </div>
                                 </div>
 

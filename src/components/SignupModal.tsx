@@ -3,12 +3,18 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 
+type SignupForm = {
+    name: string;
+    email: string;
+    password: string;
+};
+
 export default function SignupModal({ onClose }: { onClose: () => void }) {
-    const [form, setForm] = useState({ name: "", email: "", password: "" });
+    const [form, setForm] = useState<SignupForm>({ name: "", email: "", password: "" });
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    async function onSubmit(e: React.FormEvent) {
+    async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError(null);
         setLoading(true);
@@ -21,7 +27,7 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
             });
 
             if (!res.ok) {
-                const j = await res.json().catch(() => ({}));
+                const j: { error?: string } = await res.json().catch(() => ({}));
                 throw new Error(j?.error || "Sign up failed");
             }
 
@@ -30,24 +36,21 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
                 password: form.password,
                 callbackUrl: "/",
             });
-        } catch (err: any) {
-            setError(err.message);
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : "Sign up failed";
+            setError(msg);
+        } finally {
             setLoading(false);
         }
     }
 
     return (
-        <div
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={onClose} // 👈 click on backdrop closes
-        >
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
             <div
                 className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900"
-                onClick={(e) => e.stopPropagation()} // 👈 prevent close when clicking inside
+                onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-white">
-                    Create your account
-                </h2>
+                <h2 className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-white">Create your account</h2>
 
                 {/* Social sign-in */}
                 <div className="space-y-3">
@@ -57,7 +60,6 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
                     >
                         Continue with Google
                     </button>
-
                     <button
                         onClick={() => signIn("azure-ad", { callbackUrl: "/" })}
                         className="w-full rounded-lg bg-blue-600 px-4 py-2.5 text-white transition hover:bg-blue-700"
@@ -111,7 +113,6 @@ export default function SignupModal({ onClose }: { onClose: () => void }) {
                     </button>
                 </form>
 
-                {/* Cancel button */}
                 <button
                     onClick={onClose}
                     className="mt-6 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"

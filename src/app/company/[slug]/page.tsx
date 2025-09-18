@@ -14,8 +14,6 @@ type Props = {
   searchParams: Promise<Search>;
 };
 
-// While testing data changes, you can temporarily disable ISR:
-// export const dynamic = "force-dynamic";
 export const revalidate = 60;
 
 export async function generateMetadata({ params }: { params: Promise<Params> }) {
@@ -32,14 +30,18 @@ export async function generateMetadata({ params }: { params: Promise<Params> }) 
 function fmtInt(n?: number | null) {
   return typeof n === "number" ? n.toLocaleString() : "—";
 }
-function fmtUSD(n?: number | null) {
-  return typeof n === "number" ? `$${n.toLocaleString()}` : "—";
-}
 function fmtRange(lo?: number | null, hi?: number | null) {
   if (lo && hi) return `${fmtInt(lo)}–${fmtInt(hi)}`;
   if (lo) return `~${fmtInt(lo)}`;
   if (hi) return `≤${fmtInt(hi)}`;
   return "—";
+}
+
+// Narrowing helper so we can read optional meta without `any`
+function hasCompanyMeta(
+  c: unknown
+): c is { hqCity?: string | null; foundedYear?: number | null } {
+  return typeof c === "object" && c !== null && ("hqCity" in c || "foundedYear" in c);
 }
 
 export default async function CompanyPage({ params, searchParams }: Props) {
@@ -50,6 +52,9 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   if (!company) return notFound();
 
   const activeTab = (tab ?? "stats") as "stats" | "jobs";
+
+  const hqCity = hasCompanyMeta(company) ? company.hqCity ?? "—" : "—";
+  const foundedYear = hasCompanyMeta(company) ? company.foundedYear ?? "—" : "—";
 
   return (
     <div className="mx-auto max-w-6xl p-4">
@@ -100,17 +105,17 @@ export default async function CompanyPage({ params, searchParams }: Props) {
           </div>
 
           {/* Optional meta on the far right if you populated them */}
-          {(company.hqCity || company.foundedYear) && (
+          {(hqCity !== "—" || foundedYear !== "—") && (
             <>
               <div className="h-10 w-px bg-gray-200" />
               <div>
                 <div className="text-gray-500">HQ</div>
-                <div className="font-medium">{(company as any).hqCity ?? "—"}</div>
+                <div className="font-medium">{hqCity}</div>
               </div>
               <div className="h-10 w-px bg-gray-200" />
               <div>
                 <div className="text-gray-500">Founded</div>
-                <div className="font-medium">{(company as any).foundedYear ?? "—"}</div>
+                <div className="font-medium">{foundedYear}</div>
               </div>
             </>
           )}
@@ -127,7 +132,10 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         ) : (
           <CompanyJobs
             slug={company.slug}
-            initialJobs={company.jobs}
+            initialJobs={company.jobs.map(({ url, ...rest }) => ({
+              ...rest,
+              url: url ?? "", // coerce null → ""
+            }))}
             buStats={company.businessUnits}
             overall={{
               overallResponseRate: company.kpis.overallResponseRate,

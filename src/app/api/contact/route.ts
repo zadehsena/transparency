@@ -27,10 +27,7 @@ export async function POST(req: Request) {
             return NextResponse.json({ ok: true }); // pretend success
         }
 
-        const ip =
-            (req.headers.get("x-forwarded-for") || "").split(",")[0]?.trim() ||
-            (req as any).ip ||
-            null;
+        const ip = (req.headers.get("x-forwarded-for") || "").split(",")[0]?.trim() || null;
 
         await prisma.contactMessage.create({
             data: {
@@ -43,7 +40,7 @@ export async function POST(req: Request) {
         // await sendContactEmail(data); // implement if you want
 
         return NextResponse.json({ ok: true });
-    } catch (e) {
+    } catch {
         return NextResponse.json({ error: "Server error" }, { status: 500 });
     }
 }

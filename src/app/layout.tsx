@@ -46,9 +46,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
 
           <footer className="border-t bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-900/80 dark:border-gray-800">
             <div className="mx-auto max-w-6xl px-4 py-10">
-              <div className="grid gap-8 sm:grid-cols-2 md:grid-cols-4">
-                {/* Brand */}
-                <div>
+              {/* 2 cols on mobile, 3 on sm, 4 on md+ */}
+              <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-4">
+                {/* Brand: full width on mobile, normal on sm+ */}
+                <div className="col-span-2 sm:col-span-1">
                   <Link href="/" className="text-lg font-semibold text-black dark:text-white">
                     Transparency
                   </Link>
@@ -98,6 +99,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   </ul>
 
                   <div className="mt-4 flex items-center gap-4">
+                    {/* GitHub */}
                     <a
                       href="https://github.com/zadehsena/transparency"
                       target="_blank"
@@ -106,11 +108,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                       title="GitHub"
                     >
-                      {/* GitHub icon */}
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
                         <path fillRule="evenodd" d="M12 2C6.48 2 2 6.58 2 12.25c0 4.51 2.87 8.33 6.84 9.68.5.1.68-.22.68-.48 0-.24-.01-.87-.01-1.7-2.78.62-3.37-1.37-3.37-1.37-.45-1.18-1.11-1.49-1.11-1.49-.91-.64.07-.63.07-.63 1 .07 1.54 1.06 1.54 1.06 .9 1.58 2.37 1.12 2.95.85.09-.68.35-1.12.63-1.38-2.22-.26-4.56-1.14-4.56-5.09 0-1.12.39-2.04 1.03-2.76-.1-.26-.45-1.31.1-2.73 0 0 .85-.28 2.79 1.05A9.36 9.36 0 0 1 12 7.5c.86 0 1.73.12 2.54.36 1.93-1.33 2.78-1.05 2.78-1.05 .56 1.42.21 2.47.1 2.73.64.72 1.03 1.64 1.03 2.76 0 3.96-2.34 4.82-4.57 5.07.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .26.18.59.69.48A10 10 0 0 0 22 12.25C22 6.58 17.52 2 12 2z" clipRule="evenodd" />
                       </svg>
                     </a>
+
+                    {/* X / Twitter */}
                     <a
                       href="https://x.com/"
                       target="_blank"
@@ -119,7 +122,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                       className="text-gray-500 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
                       title="Twitter / X"
                     >
-                      {/* X icon */}
                       <svg viewBox="0 0 24 24" className="h-5 w-5" fill="currentColor" aria-hidden="true">
                         <path d="M18.244 2H21l-6.66 7.62L22 22h-6.9l-4.5-5.9L4.5 22H2l7.44-8.52L2 2h6.9l4.14 5.44L18.244 2Zm-2.42 18h2.14L8.27 4H6.13l9.694 16Z" />
                       </svg>
