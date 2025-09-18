@@ -4,8 +4,13 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { signIn } from "next-auth/react";
 
-
-export default function LoginModal({ onClose }: { onClose: () => void }) {
+export default function LoginModal({
+    onClose,
+    onRequestSignup, // 👈 NEW: tell parent to open Signup
+}: {
+    onClose: () => void;
+    onRequestSignup?: () => void;
+}) {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
@@ -44,12 +49,16 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
             callbackUrl: getReturnUrl(),
         });
 
+        if (res?.error) setError(res.error);
+
         if (res?.url) {
             router.replace(res.url);
-        } else {
-            router.refresh();
+            onClose();
+            return;
         }
-        onClose();
+
+        // No redirect (e.g., error)
+        setLoading(false);
     }
 
     const handleOAuth = (provider: "google" | "azure-ad") => {
@@ -59,14 +68,14 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
     return (
         <div
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-            onClick={onClose} // 👈 clicking the backdrop closes
+            onClick={onClose}
             aria-modal="true"
             role="dialog"
             aria-labelledby="login-title"
         >
             <div
                 className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900"
-                onClick={(e) => e.stopPropagation()} // 👈 prevent backdrop close when clicking inside
+                onClick={(e) => e.stopPropagation()}
             >
                 <h2
                     id="login-title"
@@ -75,7 +84,6 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
                     Log in to your account
                 </h2>
 
-                {/* Credentials form */}
                 <form onSubmit={onSubmit} className="space-y-4">
                     <input
                         ref={emailRef}
@@ -105,20 +113,18 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
                     </button>
                 </form>
 
-                {/* Divider */}
                 <div className="my-6 flex items-center">
                     <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
                     <span className="px-3 text-sm text-gray-500">or</span>
                     <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
                 </div>
 
-                {/* Social logins (neutral, with inline logos) */}
                 <div className="space-y-3">
                     <button
                         onClick={() => handleOAuth("google")}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                     >
-                        {/* Google "G" */}
+                        {/* Google logo */}
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-5 w-5">
                             <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.22 3.6l6.85-6.85C35.9 2.7 30.47 0 24 0 14.62 0 6.47 5.38 2.55 13.22l7.98 6.19C12.1 13.02 17.62 9.5 24 9.5z" />
                             <path fill="#4285F4" d="M46.1 24.5c0-1.59-.14-3.12-.41-4.59H24v9.18h12.5c-.54 2.89-2.19 5.34-4.66 6.98l7.18 5.57C43.73 37.33 46.1 31.36 46.1 24.5z" />
@@ -132,25 +138,28 @@ export default function LoginModal({ onClose }: { onClose: () => void }) {
                         onClick={() => handleOAuth("azure-ad")}
                         className="flex w-full items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200 dark:hover:bg-gray-700"
                     >
-                        {/* Outlook / Microsoft 365 */}
+                        {/* Microsoft logo */}
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" className="h-5 w-5">
-                            <path fill="#0078D4" d="M4 12c0-2.21 1.79-4 4-4h24v32H8c-2.21 0-4-1.79-4-4V12z" />
-                            <path fill="#0364B8" d="M32 8h8c2.21 0 4 1.79 4 4v24c0 2.21-1.79 4-4 4h-8V8z" />
-                            <path fill="#28A8EA" d="M12 19c0-1.66 1.34-3 3-3h11v16H15c-1.66 0-3-1.34-3-3V19z" />
-                            <path fill="#fff" d="M19.5 30c-3.04 0-5.5-2.46-5.5-5.5s2.46-5.5 5.5-5.5S25 21.46 25 24.5 22.54 30 19.5 30zm0-2c1.93 0 3.5-1.57 3.5-3.5S21.43 21 19.5 21 16 22.57 16 24.5 17.57 28 19.5 28z" />
+                            <path fill="#F25022" d="M23 23H4V4h19v19z" />
+                            <path fill="#7FBA00" d="M44 23H25V4h19v19z" />
+                            <path fill="#00A4EF" d="M23 44H4V25h19v19z" />
+                            <path fill="#FFB900" d="M44 44H25V25h19v19z" />
                         </svg>
                         Continue with Outlook
                     </button>
                 </div>
 
-
-                {/* Cancel */}
-                <button
-                    onClick={onClose}
-                    className="mt-6 w-full rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition hover:bg-gray-100 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
-                >
-                    Cancel
-                </button>
+                {/* Switch to signup */}
+                <p className="mt-5 text-center text-sm text-gray-600 dark:text-gray-300">
+                    Don’t have an account?{" "}
+                    <button
+                        type="button"
+                        onClick={onRequestSignup}
+                        className="font-medium underline hover:text-gray-800 dark:hover:text-white"
+                    >
+                        Create one
+                    </button>
+                </p>
             </div>
         </div>
     );

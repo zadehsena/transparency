@@ -64,7 +64,7 @@ export const COMPANY_DOMAINS: Record<string, string> = {
     apple: 'apple.com',
     microsoft: 'microsoft.com',
     amazon: 'amazon.com',
-    meta: 'facebook.com', // Meta’s logo via facebook.com is more reliable
+    meta: 'meta.com',
     salesforce: 'salesforce.com',
     adobe: 'adobe.com',
     oracle: 'oracle.com',

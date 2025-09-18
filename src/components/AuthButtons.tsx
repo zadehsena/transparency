@@ -6,19 +6,15 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import SignupModal from "./SignupModal";
 import LoginModal from "./LoginModal";
-import { listenAuthModal } from "@/lib/authModal"; // 👈 add
+import { listenAuthModal } from "@/lib/authModal";
 
 export default function AuthButtons() {
   const { status } = useSession();
-  const [showSignup, setShowSignup] = useState(false);
-  const [showLogin, setShowLogin] = useState(false);
+  const [modal, setModal] = useState<"login" | "signup" | null>(null);
 
-  // 👇 listen for global openAuthModal("login" | "signup")
+  // Listen for global openAuthModal("login" | "signup")
   useEffect(() => {
-    return listenAuthModal((mode) => {
-      if (mode === "login") setShowLogin(true);
-      else setShowSignup(true);
-    });
+    return listenAuthModal((mode) => setModal(mode));
   }, []);
 
   if (status === "authenticated") {
@@ -39,9 +35,19 @@ export default function AuthButtons() {
           </button>
         </div>
 
-        {/* Modals must be outside hidden container so they render on mobile */}
-        {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
-        {showSignup && <SignupModal onClose={() => setShowSignup(false)} />}
+        {/* Allow global modal opens even while authed (optional) */}
+        {modal === "login" && (
+          <LoginModal
+            onClose={() => setModal(null)}
+            onRequestSignup={() => setModal("signup")}
+          />
+        )}
+        {modal === "signup" && (
+          <SignupModal
+            onClose={() => setModal(null)}
+            onRequestLogin={() => setModal("login")}
+          />
+        )}
       </>
     );
   }
@@ -51,22 +57,26 @@ export default function AuthButtons() {
     <>
       <div className="hidden gap-3 sm:flex">
         <button
-          onClick={() => setShowLogin(true)}
+          onClick={() => setModal("login")}
           className="inline-flex items-center rounded-lg border border-gray-900 px-4 py-2 text-gray-900 transition-colors hover:bg-gray-900 hover:text-white"
         >
-          Log In
-        </button>
-        <button
-          onClick={() => setShowSignup(true)}
-          className="rounded-lg bg-black px-4 py-2 text-white hover:bg-gray-900"
-        >
-          Sign up
+          Log in
         </button>
       </div>
 
-      {/* Modals */}
-      {showLogin && <LoginModal onClose={() => setShowLogin(false)} />}
-      {showSignup && <SignupModal onClose={() => setShowSignup(false)} />}
+      {/* Modals (outside hidden container for mobile) */}
+      {modal === "login" && (
+        <LoginModal
+          onClose={() => setModal(null)}
+          onRequestSignup={() => setModal("signup")}
+        />
+      )}
+      {modal === "signup" && (
+        <SignupModal
+          onClose={() => setModal(null)}
+          onRequestLogin={() => setModal("login")}
+        />
+      )}
     </>
   );
 }
