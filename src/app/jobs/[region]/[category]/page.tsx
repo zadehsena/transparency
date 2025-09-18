@@ -134,7 +134,7 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
                             medianDays: null,
                         };
 
-                        return <JobCard key={j.id} job={cardJob} isAuthed={isAuthed} />;
+                        return <JobCard key={j.id} job={cardJob} stats={stats} isAuthed={isAuthed} />;
                     })}
                 </ul>
             )}

@@ -36,7 +36,7 @@ export default function JobCard({
     });
 
     return (
-        <li className="group relative rounded-xl border bg-white p-5 shadow-sm ring-1 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900">
+        <li className="group relative rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
             {/* whole card clickable */}
             {job.url && (
                 <a
@@ -55,8 +55,10 @@ export default function JobCard({
                     <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">
                         {job.title}
                     </h2>
-                    <p className="mt-1 truncate text-sm text-gray-600 dark:text-gray-400">
-                        {job.companyName ?? ""} {job.location ? `— ${job.location}` : ""}
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {job.companyName ? <span className="font-medium">{job.companyName}</span> : null}
+                        {job.companyName && job.location ? " — " : null}
+                        {job.location || ""}
                         <span className="mx-1 text-gray-400">•</span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                             Posted {postedPretty}
