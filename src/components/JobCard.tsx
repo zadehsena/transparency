@@ -1,7 +1,8 @@
 // src/components/JobCard.tsx
 "use client";
 
-import Link from "next/link";
+import { openAuthModal } from "@/lib/authModal";
+import { useSession } from "next-auth/react";
 
 export type JobCardJob = {
     id: string;
@@ -94,16 +95,17 @@ export default function JobCard({
                             </div>
                         </div>
 
-                        {!isAuthed && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <Link
-                                    href="/signup"
-                                    className="pointer-events-auto rounded-md bg-black/70 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-sm underline decoration-white/60 underline-offset-2 hover:decoration-white"
-                                >
-                                    Sign in to unlock
-                                </Link>
-                            </div>
-                        )}
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                e.preventDefault();     // don't follow the card's absolute link
+                                e.stopPropagation();    // don't bubble to the card
+                                openAuthModal("login"); // or "signup" if you prefer
+                            }}
+                            className="pointer-events-auto rounded-md bg-black/70 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-sm underline decoration-white/60 underline-offset-2 hover:decoration-white"
+                        >
+                            Sign in to unlock
+                        </button>
                     </div>
                 )}
             </div>
