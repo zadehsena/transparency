@@ -7,7 +7,7 @@ import JobCard, { type JobCardJob, type JobCardStats } from "@/components/JobCar
 import { parseRegionParam, REGION_LABEL } from "@/lib/jobs/regionMeta";
 import type { JobCategory } from "@prisma/client";
 import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { authOptions } from "@/lib/auth";
 
 
 type PageProps = {
@@ -123,7 +123,10 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
                             url: j.url ?? undefined,
                             // if your Job model has a string `company` field, this will show it;
                             // otherwise set to null or adapt as needed.
-                            companyName: (j as any).company ?? null,
+                            companyName:
+                                typeof (j as Record<string, unknown>).company === "string"
+                                    ? ((j as Record<string, unknown>).company as string)
+                                    : null,
                         };
 
                         // Region/category page does not compute real stats yet; pass placeholders.

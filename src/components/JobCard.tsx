@@ -2,7 +2,6 @@
 "use client";
 
 import { openAuthModal } from "@/lib/authModal";
-import { useSession } from "next-auth/react";
 
 export type JobCardJob = {
     id: string;

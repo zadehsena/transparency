@@ -23,8 +23,8 @@ function asBoolRecord(v: unknown): Record<string, boolean> {
   return out;
 }
 
-function emptyToNull<T extends string | undefined | null>(v: T) {
-  return v === "" ? (null as any) : v;
+function emptyToNull(v: string): string | null {
+  return v === "" ? null : v;
 }
 
 function toDto(user: UserWithProfile, totals: { total: number; responded: number; medianDays: number | null }) {
@@ -52,10 +52,13 @@ function toDto(user: UserWithProfile, totals: { total: number; responded: number
     portfolio: p?.portfolio ?? "",
 
     // minimal headliner (optional in your schema; include if you added it)
-    headline: (p as any)?.headline ?? "",
+    headline:
+      p && typeof (p as Record<string, unknown>)["headline"] === "string"
+        ? ((p as Record<string, unknown>)["headline"] as string)
+        : "",
 
     yearsExperience: p?.yearsExperience ?? null,
-    seniority: (p?.seniority as any) ?? null,
+    seniority: p?.seniority ?? null,
     skills,
     industries,
     summary: p?.summary ?? "",
@@ -63,7 +66,7 @@ function toDto(user: UserWithProfile, totals: { total: number; responded: number
     desiredSalaryMin: p?.desiredSalaryMin ?? null,
     desiredSalaryMax: p?.desiredSalaryMax ?? null,
     salaryCurrency: p?.salaryCurrency ?? "USD",
-    remotePreference: (p?.remotePreference as any) ?? "noPreference",
+    remotePreference: p?.remotePreference ?? "noPreference",
     willingToRelocate: p?.willingToRelocate ?? false,
     jobTypes,
     preferredLocations,
@@ -91,7 +94,7 @@ async function getAppStats(userId: string) {
   let medianDays: number | null = null;
   try {
     const rows = await prisma.application.findMany({
-      where: { userId, NOT: { firstResponseAt: null } as any },
+      where: { userId, NOT: { firstResponseAt: null } },
       select: { createdAt: true, firstResponseAt: true },
     });
 

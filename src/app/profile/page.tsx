@@ -1,7 +1,7 @@
 // src/app/profile/page.tsx
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useMemo, useState, useCallback, Suspense } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 
 /* =========================
@@ -19,6 +19,9 @@ type Profile = {
   website?: string;
   linkedin?: string;
   github?: string;
+  headline?: string;
+  summary?: string;
+  skills?: string[];
 };
 
 type Application = {
@@ -84,16 +87,28 @@ function formatDate(iso: string) {
 }
 
 /* =========================
-   Page
+   Skeleton
    ========================= */
-export default function ProfilePage() {
+function Skeleton() {
+  return (
+    <section className="mx-auto max-w-6xl px-6 py-16 space-y-4">
+      <div className="h-8 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
+      <div className="h-4 w-72 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
+    </section>
+  );
+}
+
+/* =========================
+   Content (uses useSearchParams)
+   ========================= */
+function ProfileContent() {
   const [form, setForm] = useState<Profile | null>(null);
   const [initial, setInitial] = useState<Profile | null>(null);
   const [apps, setApps] = useState<Application[] | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [, setError] = useState<string | null>(null);
 
   const isDirty = useMemo(
     () => form && initial && JSON.stringify(form) !== JSON.stringify(initial),
@@ -179,14 +194,7 @@ export default function ProfilePage() {
     }
   };
 
-  if (loading || !form) {
-    return (
-      <section className="mx-auto max-w-6xl px-6 py-16 space-y-4">
-        <div className="h-8 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
-        <div className="h-4 w-72 animate-pulse rounded bg-gray-200 dark:bg-gray-800" />
-      </section>
-    );
-  }
+  if (loading || !form) return <Skeleton />;
 
   const { total, overallResponseRate, medianResponseDays } = computeAppStats(apps);
 
@@ -247,7 +255,7 @@ export default function ProfilePage() {
       <div className="space-y-8">
         {/* Profile tab — minimal fields */}
         <div role="tabpanel" hidden={tab !== "profile"}>
-          <div className="rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80 space-y-4">
+          <div className="space-y-4 rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               <Field label="Full name" value={form.name} onChange={(v) => update("name", v)} required />
               <Field label="Email" type="email" value={form.email} onChange={(v) => update("email", v)} required />
@@ -274,7 +282,7 @@ export default function ProfilePage() {
 
             <div className="flex flex-wrap items-center gap-4">
               <Toggle label="Open to work" checked={form.openToWork} onChange={(v) => update("openToWork", v)} />
-              <Select
+              <Select<Visibility>
                 label="Profile visibility"
                 value={form.visibility}
                 options={[
@@ -282,11 +290,12 @@ export default function ProfilePage() {
                   { value: "employers", label: "Employers only" },
                   { value: "private", label: "Private" },
                 ]}
-                onChange={(v) => update("visibility", v as any)}
+                onChange={(v) => update("visibility", v as Visibility)}
               />
             </div>
           </div>
         </div>
+
         {/* Applications tab */}
         <div role="tabpanel" hidden={tab !== "applications"}>
           {/* Stats card — always visible */}
@@ -314,6 +323,17 @@ export default function ProfilePage() {
         </div>
       </div>
     </section>
+  );
+}
+
+/* =========================
+   Default export with Suspense
+   ========================= */
+export default function ProfilePage() {
+  return (
+    <Suspense fallback={<Skeleton />}>
+      <ProfileContent />
+    </Suspense>
   );
 }
 
@@ -377,13 +397,11 @@ function Toggle({
       <button
         type="button"
         onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 rounded-full border transition-colors dark:border-gray-700 ${checked ? "bg-gray-900" : "bg-gray-200 dark:bg-gray-800"
-          }`}
+        className={`relative h-6 w-11 rounded-full border transition-colors dark:border-gray-700 ${checked ? "bg-gray-900" : "bg-gray-200 dark:bg-gray-800"}`}
         aria-pressed={checked}
       >
         <span
-          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${checked ? "right-0.5" : "left-0.5"
-            }`}
+          className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${checked ? "right-0.5" : "left-0.5"}`}
         />
       </button>
     </label>
@@ -543,7 +561,7 @@ function TagInput({
           </span>
         ))}
         <input
-          className="flex-1 min-w-[140px] bg-transparent outline-none"
+          className="min-w-[140px] flex-1 bg-transparent outline-none"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {

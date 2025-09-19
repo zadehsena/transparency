@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from "next-auth/react";
-import JobCard, { type JobCardJob, type JobCardStats } from "./JobCard";
+import JobCard, { type JobCardJob } from "./JobCard";
 
 export type Job = {
   id: string;
