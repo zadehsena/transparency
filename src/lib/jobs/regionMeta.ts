@@ -48,15 +48,15 @@ export const REGION_BLURB: Record<Region, string> = {
 
 // swap these with your own assets if you like
 export const REGION_ICONS: Record<Region, string> = {
-    north_america: "/images/regions/north_america.png",
+    north_america: "/images/regions/global.png",
     europe: "/images/regions/europe.png",
-    asia: "/images/regions/data_analytics.png",
-    oceania: "/images/regions/data_analytics.png",
-    latin_america: "/images/regions/data_analytics.png",
-    middle_east: "/images/regions/middle_east.png",
-    africa: "/images/regions/data_analytics.png",
+    asia: "/images/regions/asia.png",
+    oceania: "/images/regions/global.png",
+    latin_america: "/images/regions/global.png",
+    middle_east: "/images/regions/global.png",
+    africa: "/images/regions/africa.png",
     remote: "/images/regions/remote.png",
-    global: "/images/regions/data_analytics.png",
+    global: "/images/regions/global.png",
 };
 
 // URL <-> enum helpers
