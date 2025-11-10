@@ -22,10 +22,6 @@ export default function CompanyStats({ businessUnits }: { businessUnits: BUStat[
       {/* ... */}
       {businessUnits.map((bu) => (
         <div key={bu.name} className="...">
-          {/* other fields */}
-          <div className="text-xs text-gray-500">
-            Median response days: {bu.medianResponseDays ?? '—'}
-          </div>
         </div>
       ))}
     </div>

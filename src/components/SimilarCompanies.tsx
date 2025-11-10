@@ -18,7 +18,7 @@ export default function SimilarCompanies({ items }: { items: Item[] }) {
                 Other companies with active job listings and transparency data.
             </p>
 
-            <ul className="grid grid-cols-1 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            <ul className="flex flex-col gap-3">
                 {items.map((c) => (
                     <li key={c.slug}>
                         <Link

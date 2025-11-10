@@ -8,6 +8,7 @@ import CompanyLogo from "@/components/CompanyLogo";
 import TransparencyScore from "@/components/TransparencyScore";
 import CompanyNews from "@/components/CompanyNews";
 import SimilarCompanies from "@/components/SimilarCompanies";
+import CompanySummary from "@/components/CompanySummary";
 
 type Params = { slug: string };
 type Search = { tab?: string };
@@ -55,13 +56,11 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const company = await getCompanyBySlug(slug);
   if (!company) return notFound();
 
-  // include "overview" and default to it
   const activeTab = (tab ?? "overview") as "overview" | "myapps" | "jobs";
 
   // similar companies (random for now, excluding current)
-  const similar = await getRandomCompanies(8, company.slug);
+  const similar = await getRandomCompanies(5, company.slug);
 
-  // Pull optional transparency fields (if you later add them to the payload)
   const t = (company as any).transparency as
     | {
       score?: number | null;
@@ -82,7 +81,6 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       jobAccuracy: t?.jobAccuracy,
     });
 
-  // Optional fields some companies may have
   const ticker = (company as any).ticker ?? "";
   const domain =
     (company as any).domain ??
@@ -120,9 +118,9 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       {/* Tabs */}
       <CompanyTabs active={activeTab} />
 
-      {/* Content */}
+      {/* Tab content (skip on overview to avoid duplicates) */}
       <div className="mt-4">
-        {activeTab === "jobs" ? (
+        {activeTab === "jobs" && (
           <CompanyJobs
             slug={company.slug}
             initialJobs={company.jobs.map(({ url, ...rest }) => ({
@@ -136,24 +134,39 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               medianResponseDays: company.kpis.medianResponseDays,
             }}
           />
-        ) : (
-          // for "overview" and "myapps" (placeholder) we keep CompanyStats as-is
+        )}
+
+        {activeTab === "myapps" && (
           <CompanyStats businessUnits={company.businessUnits} />
         )}
       </div>
 
-      {/* Similar Companies — only on Overview */}
-      {activeTab === "overview" && similar.length > 0 && (
-        <div className="mt-8">
-          <SimilarCompanies items={similar} />
-        </div>
-      )}
-
-      {/* News — only on Overview */}
+      {/* Overview layout */}
       {activeTab === "overview" && (
-        <div className="mt-8">
-          <CompanyNews name={company.name} domain={domain} ticker={ticker} />
-        </div>
+        <>
+          {/* Row 1: Company info (left) + Similar companies (right) */}
+          <div className="mt-8 flex flex-col gap-8 lg:flex-row">
+            <div className="flex-1">
+              <CompanySummary
+                name={company.name}
+                hqCity={company.hqCity}
+                employeesLow={company.employeesLow}
+                employeesHigh={company.employeesHigh}
+                foundedYear={company.foundedYear}
+                domain={domain}
+              />
+            </div>
+
+            <div className="w-full lg:w-1/4">
+              <SimilarCompanies items={similar} />
+            </div>
+          </div>
+
+          {/* Row 2: News full width */}
+          <div className="mt-8">
+            <CompanyNews name={company.name} domain={domain} ticker={ticker} />
+          </div>
+        </>
       )}
 
       {/* Footer */}
