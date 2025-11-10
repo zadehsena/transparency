@@ -54,7 +54,8 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const company = await getCompanyBySlug(slug);
   if (!company) return notFound();
 
-  const activeTab = (tab ?? "stats") as "stats" | "jobs";
+  // include "overview" and default to it
+  const activeTab = (tab ?? "overview") as "overview" | "myapps" | "jobs";
 
   // Pull optional transparency fields (if you later add them to the payload)
   const t = (company as any).transparency as
@@ -117,9 +118,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
 
       {/* Content */}
       <div className="mt-4">
-        {activeTab === "stats" ? (
-          <CompanyStats businessUnits={company.businessUnits} />
-        ) : (
+        {activeTab === "jobs" ? (
           <CompanyJobs
             slug={company.slug}
             initialJobs={company.jobs.map(({ url, ...rest }) => ({
@@ -133,13 +132,18 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               medianResponseDays: company.kpis.medianResponseDays,
             }}
           />
+        ) : (
+          // for "overview" and "myapps" (placeholder) we keep CompanyStats as-is
+          <CompanyStats businessUnits={company.businessUnits} />
         )}
       </div>
 
-      {/* News (always visible, regardless of tab) */}
-      <div className="mt-8">
-        <CompanyNews name={company.name} domain={domain} ticker={ticker} />
-      </div>
+      {/* News — only on Overview */}
+      {activeTab === "overview" && (
+        <div className="mt-8">
+          <CompanyNews name={company.name} domain={domain} ticker={ticker} />
+        </div>
+      )}
 
       {/* Footer */}
       <p className="mt-8 text-xs text-gray-500">
