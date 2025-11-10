@@ -1,10 +1,11 @@
-// app/company/[slug]/page.tsx
+// src/app/company/[slug]/page.tsx
 import { notFound } from "next/navigation";
 import { getCompanyBySlug } from "@/lib/companies";
 import CompanyTabs from "@/components/CompanyTabs";
 import CompanyStats from "@/components/CompanyStats";
 import CompanyJobs from "@/components/CompanyJobs";
 import CompanyLogo from "@/components/CompanyLogo";
+import TransparencyScore from "@/components/TransparencyScore";
 
 type Params = { slug: string };
 type Search = { tab?: string };
@@ -44,6 +45,25 @@ function hasCompanyMeta(
   return typeof c === "object" && c !== null && ("hqCity" in c || "foundedYear" in c);
 }
 
+// Simple scoring heuristic (until backend adds real score)
+function roughScore({
+  responseRate,
+  avgReplyDays,
+  salaryDisclosure,
+  jobAccuracy,
+}: {
+  responseRate?: number | null;
+  avgReplyDays?: number | null;
+  salaryDisclosure?: number | null;
+  jobAccuracy?: number | null;
+}) {
+  const rr = (responseRate ?? 0) / 100;
+  const rt = avgReplyDays == null ? 0.5 : Math.max(0, Math.min(1, 1 - avgReplyDays / 14));
+  const sd = (salaryDisclosure ?? 0) / 100;
+  const ja = (jobAccuracy ?? 0) / 100;
+  return Math.round((rr * 0.4 + rt * 0.25 + sd * 0.2 + ja * 0.15) * 100);
+}
+
 export default async function CompanyPage({ params, searchParams }: Props) {
   const { slug } = await params;
   const { tab } = await searchParams;
@@ -55,6 +75,27 @@ export default async function CompanyPage({ params, searchParams }: Props) {
 
   const hqCity = hasCompanyMeta(company) ? company.hqCity ?? "—" : "—";
   const foundedYear = hasCompanyMeta(company) ? company.foundedYear ?? "—" : "—";
+
+  // Pull optional transparency fields (if you later add them to the payload)
+  const t = (company as any).transparency as
+    | {
+      score?: number | null;
+      responseRate?: number | null;
+      avgReplyDays?: number | null;
+      salaryDisclosure?: number | null;
+      jobAccuracy?: number | null;
+      trend90d?: number | null;
+    }
+    | undefined;
+
+  const score =
+    t?.score ??
+    roughScore({
+      responseRate: t?.responseRate ?? company.kpis?.overallResponseRate,
+      avgReplyDays: t?.avgReplyDays ?? company.kpis?.medianResponseDays,
+      salaryDisclosure: t?.salaryDisclosure,
+      jobAccuracy: t?.jobAccuracy,
+    });
 
   return (
     <div className="mx-auto max-w-6xl p-4">
@@ -70,55 +111,16 @@ export default async function CompanyPage({ params, searchParams }: Props) {
           </p>
         </div>
 
-        {/* Facts + KPIs strip */}
-        <div className="flex flex-wrap items-stretch gap-4 rounded-lg border bg-white p-3 text-sm">
-          {/* Employees */}
-          <div>
-            <div className="text-gray-500">Employees</div>
-            <div className="font-medium">
-              {fmtRange(
-                company.employeesLow as number | undefined,
-                company.employeesHigh as number | undefined
-              )}
-            </div>
-          </div>
-          <div className="h-10 w-px bg-gray-200" />
-
-          {/* Existing KPIs */}
-          <div>
-            <div className="text-gray-500">Overall Response Rate</div>
-            <div className="font-medium">{company.kpis.overallResponseRate}%</div>
-          </div>
-          <div className="h-10 w-px bg-gray-200" />
-
-          <div>
-            <div className="text-gray-500">Total Applications</div>
-            <div className="font-medium">{company.kpis.totalApplications.toLocaleString()}</div>
-          </div>
-          <div className="h-10 w-px bg-gray-200" />
-
-          <div>
-            <div className="text-gray-500">Median Response</div>
-            <div className="font-medium">
-              {company.kpis.medianResponseDays != null ? `${company.kpis.medianResponseDays} days` : "—"}
-            </div>
-          </div>
-
-          {/* Optional meta on the far right if you populated them */}
-          {(hqCity !== "—" || foundedYear !== "—") && (
-            <>
-              <div className="h-10 w-px bg-gray-200" />
-              <div>
-                <div className="text-gray-500">HQ</div>
-                <div className="font-medium">{hqCity}</div>
-              </div>
-              <div className="h-10 w-px bg-gray-200" />
-              <div>
-                <div className="text-gray-500">Founded</div>
-                <div className="font-medium">{foundedYear}</div>
-              </div>
-            </>
-          )}
+        {/* Right: Transparency Score */}
+        <div className="w-full sm:w-auto">
+          <TransparencyScore
+            score={score}
+            responseRate={t?.responseRate ?? company.kpis?.overallResponseRate}
+            avgReplyDays={t?.avgReplyDays ?? company.kpis?.medianResponseDays}
+            salaryDisclosure={t?.salaryDisclosure}
+            jobAccuracy={t?.jobAccuracy}
+            trend90d={t?.trend90d}
+          />
         </div>
       </div>
 
@@ -134,7 +136,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             slug={company.slug}
             initialJobs={company.jobs.map(({ url, ...rest }) => ({
               ...rest,
-              url: url ?? "", // coerce null → ""
+              url: url ?? "",
             }))}
             buStats={company.businessUnits}
             overall={{
