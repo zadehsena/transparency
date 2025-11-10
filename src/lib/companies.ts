@@ -1,3 +1,4 @@
+// src/lib/companies.ts
 import { prisma } from "@/lib/prisma";
 
 export type CompanyView = {
@@ -55,7 +56,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
   });
   if (!company) return null;
 
-  const businessUnits = company.businessUnits.map(u => ({
+  const businessUnits = company.businessUnits.map((u) => ({
     name: u.name,
     applications: u.applications,
     responses: u.responses,
@@ -76,7 +77,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
   const overallResponseRate =
     totals.applications > 0 ? Math.round((totals.responses / totals.applications) * 100) : 0;
 
-  const jobs = company.jobs.map(j => ({
+  const jobs = company.jobs.map((j) => ({
     id: j.id,
     title: j.title,
     location: j.location,
@@ -110,7 +111,6 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
   };
 }
 
-
 export async function getPopularCompanySlugs(limit = 50) {
   const rows = await prisma.company.findMany({
     select: { slug: true },
@@ -118,4 +118,36 @@ export async function getPopularCompanySlugs(limit = 50) {
     take: limit,
   });
   return rows.map((r) => r.slug);
+}
+
+// -----------------------------------------------------------
+// Similar Companies / Random Companies
+// -----------------------------------------------------------
+
+export type CompanyListItem = {
+  slug: string;
+  name: string;
+};
+
+/**
+ * Return N random companies from the DB (excluding the current slug).
+ * DB-agnostic: fetch a pool and shuffle in-memory.
+ */
+export async function getRandomCompanies(
+  limit = 8,
+  excludeSlug?: string
+): Promise<CompanyListItem[]> {
+  const pool = await prisma.company.findMany({
+    where: excludeSlug ? { slug: { not: excludeSlug } } : {},
+    select: { slug: true, name: true },
+    take: 200,
+  });
+
+  // Fisher–Yates shuffle
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+
+  return pool.slice(0, limit);
 }

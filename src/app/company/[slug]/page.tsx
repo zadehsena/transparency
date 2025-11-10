@@ -1,12 +1,13 @@
 // src/app/company/[slug]/page.tsx
 import { notFound } from "next/navigation";
-import { getCompanyBySlug } from "@/lib/companies";
+import { getCompanyBySlug, getRandomCompanies } from "@/lib/companies";
 import CompanyTabs from "@/components/CompanyTabs";
 import CompanyStats from "@/components/CompanyStats";
 import CompanyJobs from "@/components/CompanyJobs";
 import CompanyLogo from "@/components/CompanyLogo";
 import TransparencyScore from "@/components/TransparencyScore";
 import CompanyNews from "@/components/CompanyNews";
+import SimilarCompanies from "@/components/SimilarCompanies";
 
 type Params = { slug: string };
 type Search = { tab?: string };
@@ -56,6 +57,9 @@ export default async function CompanyPage({ params, searchParams }: Props) {
 
   // include "overview" and default to it
   const activeTab = (tab ?? "overview") as "overview" | "myapps" | "jobs";
+
+  // similar companies (random for now, excluding current)
+  const similar = await getRandomCompanies(8, company.slug);
 
   // Pull optional transparency fields (if you later add them to the payload)
   const t = (company as any).transparency as
@@ -137,6 +141,13 @@ export default async function CompanyPage({ params, searchParams }: Props) {
           <CompanyStats businessUnits={company.businessUnits} />
         )}
       </div>
+
+      {/* Similar Companies — only on Overview */}
+      {activeTab === "overview" && similar.length > 0 && (
+        <div className="mt-8">
+          <SimilarCompanies items={similar} />
+        </div>
+      )}
 
       {/* News — only on Overview */}
       {activeTab === "overview" && (
