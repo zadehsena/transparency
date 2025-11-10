@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { signIn } from "next-auth/react";
 
 type SignupForm = {
@@ -9,22 +9,54 @@ type SignupForm = {
     password: string;
 };
 
+type PasswordReqs = {
+    length: boolean;
+    upper: boolean;
+    lower: boolean;
+    number: boolean;
+};
+
+function validatePassword(pw: string): PasswordReqs {
+    return {
+        length: pw.length >= 8,
+        upper: /[A-Z]/.test(pw),
+        lower: /[a-z]/.test(pw),
+        number: /[0-9]/.test(pw),
+    };
+}
+
+function AllGood(reqs: PasswordReqs) {
+    return reqs.length && reqs.upper && reqs.lower && reqs.number;
+}
+
 export default function SignupModal({
     onClose,
-    onRequestLogin, // 👈 NEW
+    onRequestLogin,
 }: {
     onClose: () => void;
     onRequestLogin?: () => void;
 }) {
-    const [form, setForm] = useState<SignupForm>({ name: "", email: "", password: "" });
+    const [form, setForm] = useState<SignupForm>({
+        name: "",
+        email: "",
+        password: "",
+    });
+    const [showPw, setShowPw] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [pwFocused, setPwFocused] = useState(false);
+
+    const reqs = useMemo(() => validatePassword(form.password), [form.password]);
+    const canSubmit = !loading && AllGood(reqs) && !!form.email;
 
     async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
         e.preventDefault();
         setError(null);
-        setLoading(true);
 
+        // Guard client-side (server should also validate)
+        if (!AllGood(reqs)) return;
+
+        setLoading(true);
         try {
             const res = await fetch("/api/signup", {
                 method: "POST",
@@ -51,23 +83,20 @@ export default function SignupModal({
     }
 
     return (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={onClose}>
+        <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+            onClick={onClose}
+        >
             <div
                 className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl dark:bg-gray-900"
                 onClick={(e) => e.stopPropagation()}
             >
-                <h2 className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-white">Create your account</h2>
+                <h2 className="mb-6 text-center text-2xl font-bold text-gray-900 dark:text-white">
+                    Create your account
+                </h2>
 
                 {/* Email/password form */}
-                <form onSubmit={onSubmit} className="space-y-4">
-                    <input
-                        type="text"
-                        placeholder="Full name"
-                        required
-                        value={form.name}
-                        onChange={(e) => setForm((s) => ({ ...s, name: e.target.value }))}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                    />
+                <form onSubmit={onSubmit} className="space-y-4" noValidate>
                     <input
                         type="email"
                         placeholder="Email"
@@ -76,28 +105,63 @@ export default function SignupModal({
                         onChange={(e) => setForm((s) => ({ ...s, email: e.target.value }))}
                         className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
                     />
-                    <input
-                        type="password"
-                        placeholder="Password"
-                        required
-                        value={form.password}
-                        onChange={(e) => setForm((s) => ({ ...s, password: e.target.value }))}
-                        className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
-                    />
+
+                    {/* Password with show/hide */}
+                    <div className="relative">
+                        <input
+                            type={showPw ? "text" : "password"}
+                            placeholder="Password"
+                            required
+                            aria-describedby="pw-help"
+                            value={form.password}
+                            onFocus={() => setPwFocused(true)}
+                            onBlur={() => setPwFocused(false)}
+                            onChange={(e) =>
+                                setForm((s) => ({ ...s, password: e.target.value }))
+                            }
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-gray-900/20 dark:border-gray-700 dark:bg-gray-800 dark:text-white"
+                        />
+                        <button
+                            type="button"
+                            onClick={() => setShowPw((v) => !v)}
+                            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md px-2 py-1 text-xs text-gray-600 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-700"
+                            aria-label={showPw ? "Hide password" : "Show password"}
+                        >
+                            {showPw ? "Hide" : "Show"}
+                        </button>
+                    </div>
+
+                    {/* Live requirements checklist */}
+                    <div
+                        id="pw-help"
+                        aria-live="polite"
+                        className={`rounded-lg border p-3 text-xs ${AllGood(reqs) ? "border-green-200" : "border-gray-200"
+                            } dark:border-gray-700`}
+                    >
+                        <p className="mb-2 font-medium text-gray-700 dark:text-gray-200">
+                            Password must include:
+                        </p>
+                        <ul className="space-y-1">
+                            <Req ok={reqs.length} label="At least 8 characters" />
+                            <Req ok={reqs.upper} label="At least one uppercase letter (A-Z)" />
+                            <Req ok={reqs.lower} label="At least one lowercase letter (a-z)" />
+                            <Req ok={reqs.number} label="At least one number (0-9)" />
+                        </ul>
+                    </div>
 
                     {error && <p className="text-sm text-red-600">{error}</p>}
 
                     <button
                         type="submit"
-                        disabled={loading}
-                        className="w-full rounded-lg border border-gray-900 bg-gray-900 px-4 py-2.5 text-white transition hover:bg-black disabled:opacity-60"
+                        disabled={!canSubmit}
+                        className="w-full rounded-lg border border-gray-900 bg-gray-900 px-4 py-2.5 text-white transition hover:bg-black disabled:cursor-not-allowed disabled:opacity-60"
                     >
                         {loading ? "Creating…" : "Sign up with email"}
                     </button>
                 </form>
 
                 <div className="my-6 flex items-center">
-                    <div className="h-px flex-1 bg-gray-2 00 dark:bg-gray-700" />
+                    <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
                     <span className="px-3 text-sm text-gray-500">or</span>
                     <div className="h-px flex-1 bg-gray-200 dark:bg-gray-700" />
                 </div>
@@ -167,5 +231,31 @@ export default function SignupModal({
                 </p>
             </div>
         </div>
+    );
+}
+
+function Req({ ok, label }: { ok: boolean; label: string }) {
+    return (
+        <li className="flex items-center gap-2">
+            <span
+                className={`inline-flex h-4 w-4 items-center justify-center rounded-full border ${ok
+                        ? "border-green-500 text-green-600"
+                        : "border-gray-300 text-gray-400 dark:border-gray-600 dark:text-gray-500"
+                    }`}
+                aria-hidden
+            >
+                {/* check icon when ok; dot otherwise */}
+                {ok ? (
+                    <svg viewBox="0 0 20 20" className="h-3 w-3 fill-current">
+                        <path d="M7.629 14.314l-3.94-3.94 1.414-1.415 2.526 2.526 6.365-6.364 1.414 1.414z" />
+                    </svg>
+                ) : (
+                    <span className="block h-2 w-2 rounded-full bg-current" />
+                )}
+            </span>
+            <span className={ok ? "text-green-700 dark:text-green-400" : "text-gray-600 dark:text-gray-300"}>
+                {label}
+            </span>
+        </li>
     );
 }
