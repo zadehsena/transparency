@@ -28,24 +28,6 @@ export async function generateMetadata({ params }: { params: Promise<Params> }) 
   };
 }
 
-// --- small local formatters (no extra imports) ---
-function fmtInt(n?: number | null) {
-  return typeof n === "number" ? n.toLocaleString() : "—";
-}
-function fmtRange(lo?: number | null, hi?: number | null) {
-  if (lo && hi) return `${fmtInt(lo)}–${fmtInt(hi)}`;
-  if (lo) return `~${fmtInt(lo)}`;
-  if (hi) return `≤${fmtInt(hi)}`;
-  return "—";
-}
-
-// Narrowing helper so we can read optional meta without `any`
-function hasCompanyMeta(
-  c: unknown
-): c is { hqCity?: string | null; foundedYear?: number | null } {
-  return typeof c === "object" && c !== null && ("hqCity" in c || "foundedYear" in c);
-}
-
 // Simple scoring heuristic (until backend adds real score)
 function roughScore({
   responseRate,
@@ -73,9 +55,6 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   if (!company) return notFound();
 
   const activeTab = (tab ?? "stats") as "stats" | "jobs";
-
-  const hqCity = hasCompanyMeta(company) ? company.hqCity ?? "—" : "—";
-  const foundedYear = hasCompanyMeta(company) ? company.foundedYear ?? "—" : "—";
 
   // Pull optional transparency fields (if you later add them to the payload)
   const t = (company as any).transparency as
@@ -166,13 +145,6 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       <p className="mt-8 text-xs text-gray-500">
         Last updated: {new Date(company.updatedAt).toLocaleDateString()}
       </p>
-
-      {/* Dev-only payload peek (uncomment if debugging) */}
-      {process.env.NODE_ENV === "development" && false && (
-        <pre className="mt-4 max-h-64 overflow-auto rounded bg-gray-50 p-3 text-[11px] text-gray-600">
-          {JSON.stringify(company, null, 2)}
-        </pre>
-      )}
     </div>
   );
 }
