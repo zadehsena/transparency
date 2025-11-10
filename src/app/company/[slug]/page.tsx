@@ -6,6 +6,7 @@ import CompanyStats from "@/components/CompanyStats";
 import CompanyJobs from "@/components/CompanyJobs";
 import CompanyLogo from "@/components/CompanyLogo";
 import TransparencyScore from "@/components/TransparencyScore";
+import CompanyNews from "@/components/CompanyNews";
 
 type Params = { slug: string };
 type Search = { tab?: string };
@@ -97,6 +98,14 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       jobAccuracy: t?.jobAccuracy,
     });
 
+  // Optional fields some companies may have
+  const ticker = (company as any).ticker ?? "";
+  const domain =
+    (company as any).domain ??
+    (company as any).websiteDomain ??
+    (company as any).website ??
+    "";
+
   return (
     <div className="mx-auto max-w-6xl p-4">
       {/* Header */}
@@ -146,6 +155,11 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             }}
           />
         )}
+      </div>
+
+      {/* News (always visible, regardless of tab) */}
+      <div className="mt-8">
+        <CompanyNews name={company.name} domain={domain} ticker={ticker} />
       </div>
 
       {/* Footer */}
