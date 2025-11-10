@@ -72,7 +72,7 @@ export default function SignupModal({
             await signIn("credentials", {
                 email: form.email,
                 password: form.password,
-                callbackUrl: "/",
+                callbackUrl: "/onboarding", // ✅ go straight to onboarding
             });
             onClose();
         } catch (err: unknown) {
@@ -239,8 +239,8 @@ function Req({ ok, label }: { ok: boolean; label: string }) {
         <li className="flex items-center gap-2">
             <span
                 className={`inline-flex h-4 w-4 items-center justify-center rounded-full border ${ok
-                        ? "border-green-500 text-green-600"
-                        : "border-gray-300 text-gray-400 dark:border-gray-600 dark:text-gray-500"
+                    ? "border-green-500 text-green-600"
+                    : "border-gray-300 text-gray-400 dark:border-gray-600 dark:text-gray-500"
                     }`}
                 aria-hidden
             >

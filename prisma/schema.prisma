@@ -31,11 +31,18 @@ enum Seniority {
 }
 
 model User {
-  id           String        @id @default(cuid())
-  name         String?
-  email        String        @unique
-  password     String
-  createdAt    DateTime      @default(now())
+  id          String   @id @default(cuid())
+  email       String   @unique
+  password    String
+  firstName   String?
+  lastName    String?
+  birthdate   DateTime?
+  location    String?
+  interests   Json?          // from earlier step
+  level       String?
+  onboardingCompleted Boolean @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt @default(now()) // <-- add @default(now())
   applications Application[]
   profile      Profile?
 }
