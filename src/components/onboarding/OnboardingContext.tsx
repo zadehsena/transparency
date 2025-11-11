@@ -34,7 +34,7 @@ const C = createContext<Ctx | null>(null);
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
     const [step, setStep] = useState(1);
     const [data, setDataState] = useState<OnboardingData>({});
-    const total = 7; // Name, Birthdate, Location, Interests, Level (Confirm shown after)
+    const total = 8; // Name, Birthdate, Location, Interests, Level (Confirm shown after)
 
     const value = useMemo<Ctx>(() => ({
         step,

@@ -103,5 +103,5 @@ export async function completeOnboarding() {
         where: { id: user.id },
         data: { onboardingCompleted: true },
     });
-    return "/applications"; // change this to your desired post-onboarding route
+    return "profile?tab=profile"; // change this to your desired post-onboarding route
 }

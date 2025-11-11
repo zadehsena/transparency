@@ -38,13 +38,21 @@ model User {
   lastName    String?
   birthdate   DateTime?
   location    String?
-  interests   Json?          // from earlier step
+  interests  InterestGroup[]
   level       String?
   onboardingCompleted Boolean @default(false)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt @default(now()) // <-- add @default(now())
   applications Application[]
   profile      Profile?
+}
+
+model InterestGroup {
+  id         String   @id @default(cuid())
+  userId     String
+  category   String            // e.g., "Tech", "Finance", "Healthcare"
+  subtopics  String[]          // e.g., ["Software", "DevOps", "AI"]
+  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Company {
