@@ -49,7 +49,7 @@ export const COMPANY_ATS: CompanyAts[] = [
   { slug: 'slack', provider: 'lever', token: 'slack' },
   { slug: 'quora', provider: 'lever', token: 'quora' },
   { slug: 'yelp', provider: 'lever', token: 'yelp' },
-  { slug: 'robinhood-lever', provider: 'lever', token: 'robinhood' }, // some companies switch ATS
+  { slug: 'robinhood', provider: 'lever', token: 'robinhood' }, // some companies switch ATS
   { slug: 'paypal', provider: 'lever', token: 'paypal' },
   { slug: 'lever', provider: 'lever', token: 'lever' }, // Lever’s own jobs
   { slug: 'square', provider: 'lever', token: 'square' },

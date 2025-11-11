@@ -46,6 +46,56 @@ export async function savePartial(data: SaveData) {
     revalidatePath("/onboarding");
 }
 
+export async function saveEducation(ed: {
+    school?: string;
+    degree?: string;
+    field?: string;
+    graduationYear?: string; // accept string; coerce to int
+}) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+
+    await prisma.profile.upsert({
+        where: { userId: user.id },
+        create: {
+            userId: user.id,
+            educationSchool: ed.school ?? null,
+            educationDegree: ed.degree ?? null,
+            educationField: ed.field ?? null,
+            educationGraduationYear: ed.graduationYear ? parseInt(ed.graduationYear, 10) : null,
+        },
+        update: {
+            educationSchool: ed.school ?? null,
+            educationDegree: ed.degree ?? null,
+            educationField: ed.field ?? null,
+            educationGraduationYear: ed.graduationYear ? parseInt(ed.graduationYear, 10) : null,
+        },
+    });
+
+    revalidatePath("/onboarding");
+}
+
+export async function saveCurrentJob(job: { company?: string; title?: string }) {
+    const user = await getCurrentUser();
+    if (!user) throw new Error("Unauthorized");
+
+    await prisma.profile.upsert({
+        where: { userId: user.id },
+        create: {
+            userId: user.id,
+            currentCompany: job.company ?? null,
+            currentTitle: job.title ?? null,
+        },
+        update: {
+            currentCompany: job.company ?? null,
+            currentTitle: job.title ?? null,
+        },
+    });
+
+    revalidatePath("/onboarding");
+}
+
+
 export async function completeOnboarding() {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");

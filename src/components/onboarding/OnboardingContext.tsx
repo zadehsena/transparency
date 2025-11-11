@@ -8,6 +8,16 @@ export type OnboardingData = {
     location?: string;
     interests?: string[];
     level?: "junior" | "mid" | "senior" | "lead";
+    education?: {
+        school?: string;
+        degree?: string;
+        field?: string;
+        graduationYear?: string;
+    };
+    job?: {
+        company?: string;
+        title?: string;
+    };
 };
 
 type Ctx = {
@@ -24,7 +34,7 @@ const C = createContext<Ctx | null>(null);
 export function OnboardingProvider({ children }: { children: React.ReactNode }) {
     const [step, setStep] = useState(1);
     const [data, setDataState] = useState<OnboardingData>({});
-    const total = 5; // Name, Birthdate, Location, Interests, Level (Confirm shown after)
+    const total = 7; // Name, Birthdate, Location, Interests, Level (Confirm shown after)
 
     const value = useMemo<Ctx>(() => ({
         step,

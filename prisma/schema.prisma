@@ -172,31 +172,42 @@ enum ApplicationStatus {
 }
 
 model Profile {
-  userId            String     @id
-  phone             String?
-  location          String?
-  openToWork        Boolean    @default(true)
-  visibility        Visibility @default(everyone)
-  website           String?
-  linkedin          String?
-  github            String?
-  portfolio         String?
-  headline          String?
-  yearsExperience   Int?
-  seniority         Seniority?
-  skills            Json?
-  industries        Json?
-  summary           String?
-  desiredSalaryMin  Int?
-  desiredSalaryMax  Int?
-  salaryCurrency    String?
-  remotePreference  RemotePreference @default(noPreference)
-  willingToRelocate Boolean?         @default(false)
-  jobTypes          Json?
+  userId             String     @id
+  phone              String?
+  location           String?
+  openToWork         Boolean    @default(true)
+  visibility         Visibility @default(everyone)
+  website            String?
+  linkedin           String?
+  github             String?
+  portfolio          String?
+  headline           String?
+  yearsExperience    Int?
+  seniority          Seniority?
+  skills             Json?
+  industries         Json?
+  summary            String?
+  desiredSalaryMin   Int?
+  desiredSalaryMax   Int?
+  salaryCurrency     String?
+  remotePreference   RemotePreference @default(noPreference)
+  willingToRelocate  Boolean?         @default(false)
+  jobTypes           Json?
   preferredLocations Json?
-  notifications     Json?
-  updatedAt         DateTime   @updatedAt
-  user              User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifications      Json?
+  updatedAt          DateTime   @updatedAt
+
+  // ✅ New education fields
+  educationSchool         String?
+  educationDegree         String?
+  educationField          String?
+  educationGraduationYear Int?
+
+  // ✅ New current job fields
+  currentCompany          String?
+  currentTitle            String?
+
+  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ContactMessage {

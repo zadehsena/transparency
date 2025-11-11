@@ -45,7 +45,6 @@ export const COMPANY_DOMAINS: Record<string, string> = {
     slack: 'slack.com',
     quora: 'quora.com',
     yelp: 'yelp.com',
-    'robinhood-lever': 'robinhood.com',
     paypal: 'paypal.com',
     lever: 'lever.co',
     square: 'squareup.com',
