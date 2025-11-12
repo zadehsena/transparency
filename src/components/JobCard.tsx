@@ -2,6 +2,8 @@
 "use client";
 
 import { openAuthModal } from "@/lib/authModal";
+import CompanyLogo from "@/components/CompanyLogo";
+import Link from "next/link";
 
 export type JobCardJob = {
     id: string;
@@ -36,29 +38,55 @@ export default function JobCard({
     });
 
     return (
-        <li className="group relative rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
-            {/* whole card clickable */}
-            {job.url && (
-                <a
-                    href={job.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="absolute inset-0 z-0"
-                    aria-label={`Open job: ${job.title}`}
-                />
-            )}
+        <li
+            className="group relative rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md cursor-pointer dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80"
+            role={job.url ? "link" : undefined}
+            tabIndex={job.url ? 0 : -1}
+            onClick={(e) => {
+                if (!job.url) return;
+                // if a child called stopPropagation, do nothing
+                window.open(job.url, "_blank", "noopener,noreferrer");
+            }}
+            onKeyDown={(e) => {
+                if (!job.url) return;
+                if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    window.open(job.url, "_blank", "noopener,noreferrer");
+                }
+            }}
+        >
 
             {/* Top row: title/company/meta, right = stats */}
-            <div className="flex items-start justify-between gap-4 relative z-10">
+            <div className="flex items-start justify-between gap-4 relative">
                 {/* LEFT */}
                 <div className="min-w-0">
-                    <h2 className="truncate text-base font-semibold text-gray-900 dark:text-gray-100">
+                    <h2 className="truncate text-lg font-bold text-gray-900 dark:text-gray-100
+               transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400
+               group-hover:underline underline-offset-2 mb-1.5">
                         {job.title}
                     </h2>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                        {job.companyName ? <span className="font-medium">{job.companyName}</span> : null}
-                        {job.companyName && job.location ? " — " : null}
-                        {job.location || ""}
+                    <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400
+               overflow-hidden text-ellipsis whitespace-nowrap">
+                        {job.companyName && (
+                            <Link
+                                href={`/company/${job.companyName.toLowerCase().replace(/\s+/g, "-")}`}
+                                className="flex items-center gap-2 font-medium text-gray-600 dark:text-gray-400
+               hover:underline hover:text-blue-600 dark:hover:text-blue-400
+               pointer-events-auto"
+                                onClick={(e) => e.stopPropagation()} // prevent triggering the job link overlay
+                            >
+                                <CompanyLogo
+                                    slug={job.companyName.toLowerCase().replace(/\s+/g, "-")}
+                                    name={job.companyName}
+                                    size={14}
+                                />
+                                <span>{job.companyName}</span>
+                            </Link>
+                        )}
+
+                        {job.companyName && job.location && <span>—</span>}
+                        {job.location && <span>{job.location}</span>}
+
                         <span className="mx-1 text-gray-400">•</span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                             Posted {postedPretty}

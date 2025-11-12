@@ -10,7 +10,7 @@ export const metadata: Metadata = {
   title: "Transparency",
   description: "Job listings with real response rates.",
   icons: {
-    icon: "/images/void.png",
+    icon: "/images/favicon.png",
   },
 };
 
@@ -23,7 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
               <Link href="/" className="flex items-center gap-2 hover:opacity-80">
                 <Image
-                  src="/images/void.png"
+                  src="/images/favicon.png"
                   alt="Transparency logo"
                   width={28}
                   height={28}
