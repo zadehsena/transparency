@@ -3,6 +3,8 @@
 
 import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import ProfileTabs, { type ProfileTabKey } from "@/components/ProfileTabs";
+import ProfileSettings from "@/components/ProfileSettings";
 
 /* =========================
    Types
@@ -29,6 +31,8 @@ type Profile = {
   // Current job (single set)
   currentCompany?: string | null;
   currentTitle?: string | null;
+
+  resume?: string | null;
 };
 
 type Application = {
@@ -41,12 +45,6 @@ type Application = {
   firstResponseAt?: string; // ISO (optional)
 };
 
-/* =========================
-   Tabs
-   ========================= */
-const TABS = ["profile", "applications"] as const;
-type TabKey = typeof TABS[number];
-const LABEL: Record<TabKey, string> = { profile: "Profile", applications: "Applications" };
 const ALL_INTERESTS = ["Software", "Data", "Product", "Design", "DevOps", "Security"] as const;
 const LEVELS = ["Entry", "Mid", "Senior", "Director", "VP", "Other"] as const;
 
@@ -118,18 +116,20 @@ function ProfileContent() {
   const router = useRouter();
   const pathname = usePathname();
   const sp = useSearchParams();
-  const initialTab = (sp.get("tab") as TabKey) || "profile";
-  const [tab, setTab] = useState<TabKey>(["profile", "applications"].includes(initialTab) ? initialTab : "profile");
+  const initialTab = (sp.get("tab") as ProfileTabKey) || "profile";
+  const [tab, setTab] = useState<ProfileTabKey>(
+    (["profile", "applications", "settings"] as const).includes(initialTab) ? initialTab : "profile"
+  );
 
   useEffect(() => {
-    const current = sp.get("tab");
-    setTab(["profile", "applications"].includes(String(current)) ? (current as TabKey) : "profile");
+    const cur = sp.get("tab");
+    setTab((["profile", "applications", "settings"] as const).includes(cur as any) ? (cur as ProfileTabKey) : "profile");
   }, [sp]);
 
-  const setTabInUrl = useCallback((t: TabKey) => {
+  const setTabInUrl = useCallback((t: ProfileTabKey) => {
     const next = new URLSearchParams(sp.toString());
     next.set("tab", t);
-    router.replace(`${pathname}?${next.toString()}`);
+    router.replace(`${pathname}?${next.toString()}`, { scroll: false });
     setTab(t);
   }, [router, pathname, sp]);
 
@@ -198,144 +198,29 @@ function ProfileContent() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
 
-      {/* Tabs */}
-      <div className="mb-6 flex flex-wrap gap-2">
-        {TABS.map(t => {
-          const active = tab === t;
-          return (
-            <button
-              key={t}
-              role="tab"
-              aria-selected={active}
-              onClick={() => setTabInUrl(t)}
-              className={[
-                "rounded-lg px-3 py-2 text-sm transition",
-                active
-                  ? "bg-gray-900 text-white dark:bg-gray-100 dark:text-gray-900"
-                  : "border text-gray-800 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/60",
-              ].join(" ")}
-            >
-              {LABEL[t]}
-            </button>
-          );
-        })}
-      </div>
-
       {/* CONTENT */}
       <div className="space-y-8">
-        {/* Profile tab — minimal */}
-        {/* Profile tab — PayPal-style layout */}
-        <div role="tabpanel" hidden={tab !== "profile"}>
-          <div className="grid gap-6 lg:grid-cols-3">
-            {/* LEFT: main column */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Profile hero */}
-              <Card>
-                <div className="flex items-center gap-4">
-                  <AvatarCircle name={headerName} />
-                  <div className="flex-1">
-                    <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{headerName}</div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {(form.level ?? "—")}{form.location ? ` · ${form.location}` : ""}
-                    </div>
+        <div className="grid gap-6 lg:grid-cols-4">
+          {/* LEFT: constant section */}
+          <div className="lg:col-span-3 space-y-6">
+            {/* Hero stays */}
+            <Card>
+              <div className="flex items-center gap-4">
+                <AvatarCircle name={headerName} />
+                <div className="flex-1">
+                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">{headerName}</div>
+                  <div className="text-sm text-gray-500 dark:text-gray-400">
+                    {(form.level ?? "—")}{form.location ? ` · ${form.location}` : ""}
                   </div>
                 </div>
-              </Card>
+              </div>
+            </Card>
 
-              {/* Personal details */}
-              <Card title="Personal details">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <Field label="First name" value={form.firstName ?? ""} onChange={(v) => update("firstName", v)} />
-                  <Field label="Last name" value={form.lastName ?? ""} onChange={(v) => update("lastName", v)} />
-                  <Field label="Birthdate" type="date" value={isoForDateInput(form.birthdate)} onChange={(v) => update("birthdate", v)} />
-                </div>
-                <div className="mt-4 grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <Field label="Location" value={form.location} onChange={(v) => update("location", v)} placeholder="City, State" />
-                  <Select
-                    label="Level"
-                    value={(form.level ?? "") as any}
-                    options={[{ value: "", label: "Select level" }, "Entry", "Mid", "Senior", "Director", "VP", "Other"].map((v: any) =>
-                      typeof v === "string" ? ({ value: v, label: v }) : v
-                    )}
-                    onChange={(v) => update("level", (v || null) as any)}
-                  />
-                </div>
-              </Card>
+            {/* Tabs header (now its own component) */}
+            <ProfileTabs active={tab} onChange={setTabInUrl} />
 
-              {/* Interests */}
-              <Card title="Interests">
-                <InterestsPicker
-                  label=""
-                  options={["Software", "Data", "Product", "Design", "DevOps", "Security"]}
-                  values={(form.interests ?? []) as string[]}
-                  onChange={(vals) => update("interests", vals)}
-                />
-              </Card>
-
-              {/* Current job */}
-              <Card title="Current job">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                  <Field
-                    label="Company"
-                    value={form.currentCompany ?? ""}
-                    onChange={(v) => update("currentCompany", v)}
-                  />
-                  <Field
-                    label="Title"
-                    value={form.currentTitle ?? ""}
-                    onChange={(v) => update("currentTitle", v)}
-                  />
-                  {/* yearsExperience / seniority exist in Prisma, but you said you don't want them now */}
-                </div>
-              </Card>
-
-              {/* Education */}
-              <Card title="Education">
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-                  <Field
-                    label="School"
-                    value={form.educationSchool ?? ""}
-                    onChange={(v) => update("educationSchool", v)}
-                  />
-                  <Field
-                    label="Degree"
-                    value={form.educationDegree ?? ""}
-                    onChange={(v) => update("educationDegree", v)}
-                  />
-                  <Field
-                    label="Field"
-                    value={form.educationField ?? ""}
-                    onChange={(v) => update("educationField", v)}
-                  />
-                  <Field
-                    label="Graduation year"
-                    type="number"
-                    value={String(form.educationGraduationYear ?? "")}
-                    onChange={(v) =>
-                      update("educationGraduationYear", v ? Number(v) : null)
-                    }
-                  />
-                </div>
-              </Card>
-            </div>
-
-            {/* RIGHT: side column */}
-            <div className="space-y-6">
-              <Card title="Email" action={<MiniAction onClick={() => { }} label="Edit" />}>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-900 dark:text-gray-100">{form.email || "—"}</div>
-                  <div className="rounded-full border px-2 py-0.5 text-xs text-gray-600 dark:border-gray-700 dark:text-gray-300">Primary</div>
-                </div>
-              </Card>
-
-              <Card title="Phone" action={<MiniAction onClick={() => { }} label="Edit" />}>
-                <div className="flex items-center justify-between">
-                  <div className="text-sm text-gray-900 dark:text-gray-100">{form.phone || "—"}</div>
-                  <div className="rounded-full border px-2 py-0.5 text-xs text-gray-600 dark:border-gray-700 dark:text-gray-300">Mobile</div>
-                </div>
-              </Card>
-
-              {/* Apps summary */}
+            {/* ONLY this switches */}
+            {tab === "profile" && (
               <Card title="Applications summary">
                 <div className="grid grid-cols-3 gap-3 text-center">
                   <SmallStat label="Response Rate" value={`${overallResponseRate}%`} />
@@ -343,48 +228,105 @@ function ProfileContent() {
                   <SmallStat label="Median Resp." value={medianResponseDays == null ? "—" : `${medianResponseDays}d`} />
                 </div>
               </Card>
-
-              {/* Save / Cancel pinned here for quick access */}
-              <div className="flex justify-end gap-2">
-                <button
-                  className="rounded-lg border px-4 py-2 text-sm dark:border-gray-700 dark:text-gray-200"
-                  onClick={() => setForm(initial)}
-                  disabled={!isDirty || saving}
-                >
-                  Cancel
-                </button>
-                <button
-                  className="rounded-lg bg-gray-900 px-4 py-2 text-sm text-white dark:bg-gray-100 dark:text-gray-900"
-                  onClick={patch}
-                  disabled={!isDirty || saving}
-                >
-                  {saving ? "Saving…" : "Save"}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Applications tab */}
-        <div role="tabpanel" hidden={tab !== "applications"}>
-          <div className="mb-6 rounded-2xl border bg-white p-6 text-center shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <StatCard label="Overall Response Rate" value={`${computeAppStats(apps).overallResponseRate}%`} />
-              <StatCard label="Total Applications" value={`${computeAppStats(apps).total}`} />
-              <StatCard label="Median Response Time" value={
-                computeAppStats(apps).medianResponseDays == null ? "—" : `${computeAppStats(apps).medianResponseDays} days`
-              } />
-            </div>
-          </div>
-
-          <div className="rounded-2xl border bg-white p-0 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
-            {!apps ? (
-              <div className="p-6 text-sm text-gray-600 dark:text-gray-400">Loading your applications…</div>
-            ) : apps.length === 0 ? (
-              <div className="p-6 text-sm text-gray-600 dark:text-gray-400">No applications yet.</div>
-            ) : (
-              <ApplicationTable apps={apps} />
             )}
+
+            {tab === "applications" && (
+              <>
+                <div className="mb-6 rounded-2xl border bg-white p-6 text-center shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
+                  <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                    <StatCard label="Overall Response Rate" value={`${overallResponseRate}%`} />
+                    <StatCard label="Total Applications" value={`${total}`} />
+                    <StatCard label="Median Response Time" value={medianResponseDays == null ? "—" : `${medianResponseDays} days`} />
+                  </div>
+                </div>
+
+                <div className="rounded-2xl border bg-white p-0 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
+                  {!apps ? (
+                    <div className="p-6 text-sm text-gray-600 dark:text-gray-400">Loading your applications…</div>
+                  ) : apps.length === 0 ? (
+                    <div className="p-6 text-sm text-gray-600 dark:text-gray-400">No applications yet.</div>
+                  ) : (
+                    <ApplicationTable apps={apps} />
+                  )}
+                </div>
+              </>
+            )}
+
+            {tab === "settings" && (
+              <ProfileSettings
+                initial={{
+                  openToWork: (form as any).openToWork ?? true,
+                  visibility: (form as any).visibility ?? "everyone",
+                  notifications: (form as any).notifications ?? {},
+                }}
+                onSaved={(saved) => {
+                  // keep page state in sync so Save/Cancel buttons on the right still work if you use them
+                  setForm((prev) => prev ? { ...prev, ...saved } as any : prev);
+                  setInitial((prev) => prev ? { ...prev, ...saved } as any : prev);
+                }}
+              />
+            )}
+          </div>
+
+          {/* RIGHT: side column */}
+          <div className="space-y-6">
+            <Card title="Email" action={<MiniAction onClick={() => { }} label="Edit" />}>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-900 dark:text-gray-100">{form.email || "—"}</div>
+                <div className="rounded-full border px-2 py-0.5 text-xs text-gray-600 dark:border-gray-700 dark:text-gray-300">Primary</div>
+              </div>
+            </Card>
+
+            <Card title="Phone" action={<MiniAction onClick={() => { }} label="Edit" />}>
+              <div className="flex items-center justify-between">
+                <div className="text-sm text-gray-900 dark:text-gray-100">{form.phone || "—"}</div>
+                <div className="rounded-full border px-2 py-0.5 text-xs text-gray-600 dark:border-gray-700 dark:text-gray-300">Mobile</div>
+              </div>
+            </Card>
+
+            {/* Resume */}
+            <Card title="Resume">
+              <div className="flex items-center justify-between">
+                {form.resume ? (
+                  <a
+                    href={form.resume}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="truncate text-sm text-gray-900 underline dark:text-gray-100"
+                  >
+                    {form.resume.split("/").pop()}
+                  </a>
+                ) : (
+                  <div className="text-sm text-gray-500 dark:text-gray-400">No resume uploaded</div>
+                )}
+
+                <label className="cursor-pointer rounded-md border px-3 py-1 text-xs font-medium text-gray-700 hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/60">
+                  Upload
+                  <input
+                    type="file"
+                    accept=".pdf,.doc,.docx"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      // You can later replace this with an API upload
+                      const fakeUrl = URL.createObjectURL(file);
+                      update("resume" as keyof Profile, fakeUrl as any);
+                    }}
+                  />
+                </label>
+              </div>
+            </Card>
+
+            {/* Interests */}
+            <Card title="Interests">
+              <InterestsPicker
+                label=""
+                options={["Software", "Data", "Product", "Design", "DevOps", "Security"]}
+                values={(form.interests ?? []) as string[]}
+                onChange={(vals) => update("interests", vals)}
+              />
+            </Card>
           </div>
         </div>
       </div>
