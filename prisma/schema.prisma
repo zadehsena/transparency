@@ -7,60 +7,40 @@ generator client {
   provider = "prisma-client-js"
 }
 
-enum Visibility {
-  everyone
-  employers
-  private
-}
-
-enum RemotePreference {
-  remote
-  hybrid
-  onsite
-  noPreference
-}
-
-enum Seniority {
-  intern
-  junior
-  mid
-  senior
-  staff
-  principal
-  lead
-}
-
 model User {
-  id          String   @id @default(cuid())
-  email       String   @unique
-  password    String
-  firstName   String?
-  lastName    String?
-  birthdate   DateTime?
-  location    String?
-  interests  InterestGroup[]
-  level       String?
-  onboardingCompleted Boolean @default(false)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt @default(now()) // <-- add @default(now())
-  applications Application[]
-  profile      Profile?
+  id                  String          @id @default(cuid())
+  email               String          @unique
+  password            String
+  firstName           String?
+  lastName            String?
+  birthdate           DateTime?
+  location            String?
+  interests           InterestGroup[]
+  level               String?
+  onboardingCompleted Boolean         @default(false)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt // <- remove @default(now())
+  applications        Application[]
+  profile             Profile?
 }
 
 model InterestGroup {
-  id         String   @id @default(cuid())
-  userId     String
-  category   String            // e.g., "Tech", "Finance", "Healthcare"
-  subtopics  String[]          // e.g., ["Software", "DevOps", "AI"]
-  user       User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id        String @id @default(cuid())
+  userId    String
+  category  String
+  subtopics Json?
+  user      User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, category]) // prevents duplicates per user/category (optional but handy)
+  @@index([userId])
 }
 
 model Company {
-  id                 String   @id @default(cuid())
-  slug               String   @unique
-  name               String
-  medianResponseDays Int?
-  updatedAt          DateTime @updatedAt
+  id                  String         @id @default(cuid())
+  slug                String         @unique
+  name                String
+  medianResponseDays  Int?
+  updatedAt           DateTime       @updatedAt
   employeesLow        Int?
   employeesHigh       Int?
   medianBaseSalaryUSD Int?
@@ -141,6 +121,7 @@ model Job {
   applications   Application[]
   category       JobCategory?
   region         Region?
+
   @@unique([ats, externalId])
   @@index([companyId, postedAt])
   @@index([category, postedAt])
@@ -154,6 +135,7 @@ model SearchEvent {
   companyId String?
   createdAt DateTime @default(now())
   company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
   @@index([slug, createdAt])
   @@index([createdAt])
 }
@@ -168,6 +150,7 @@ model Application {
   firstResponseAt DateTime?
   user            User              @relation(fields: [userId], references: [id])
   job             Job               @relation(fields: [jobId], references: [id])
+
   @@index([userId, createdAt])
   @@index([status])
 }
@@ -180,42 +163,22 @@ enum ApplicationStatus {
 }
 
 model Profile {
-  userId             String     @id
-  phone              String?
-  location           String?
-  openToWork         Boolean    @default(true)
-  visibility         Visibility @default(everyone)
-  website            String?
-  linkedin           String?
-  github             String?
-  portfolio          String?
-  headline           String?
-  yearsExperience    Int?
-  seniority          Seniority?
-  skills             Json?
-  industries         Json?
-  summary            String?
-  desiredSalaryMin   Int?
-  desiredSalaryMax   Int?
-  salaryCurrency     String?
-  remotePreference   RemotePreference @default(noPreference)
-  willingToRelocate  Boolean?         @default(false)
-  jobTypes           Json?
-  preferredLocations Json?
-  notifications      Json?
-  updatedAt          DateTime   @updatedAt
-
-  // ✅ New education fields
+  userId                  String   @id
+  phone                   String?
+  location                String?
+  yearsExperience         Int?
+  skills                  Json?
+  industries              Json?
+  notifications           Json?
+  updatedAt               DateTime @updatedAt
   educationSchool         String?
   educationDegree         String?
   educationField          String?
   educationGraduationYear Int?
-
-  // ✅ New current job fields
   currentCompany          String?
   currentTitle            String?
 
-  user               User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model ContactMessage {

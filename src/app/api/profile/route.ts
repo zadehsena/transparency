@@ -2,10 +2,10 @@
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@prisma/client";
+import { getCurrentUser } from "@/lib/auth";
 
 // ---------- Helpers ----------
 type UserWithProfile = Prisma.UserGetPayload<{ include: { profile: true } }>;
-const getUserId = async () => "cmebiyl2h000235kd6vek3q5h";
 
 // Safe JSON → string[]
 function asStringArray(v: unknown): string[] {
@@ -27,10 +27,13 @@ function emptyToNull(v: string): string | null {
   return v === "" ? null : v;
 }
 
+function fullName(u: { firstName?: string | null; lastName?: string | null }) {
+  return [u.firstName, u.lastName].filter(Boolean).join(" ");
+}
+
 function toDto(user: UserWithProfile, totals: { total: number; responded: number; medianDays: number | null }) {
   const p = user.profile;
 
-  // JSON fields normalized
   const skills = asStringArray(p?.skills ?? []);
   const industries = asStringArray(p?.industries ?? []);
   const jobTypes = asStringArray(p?.jobTypes ?? []);
@@ -38,7 +41,7 @@ function toDto(user: UserWithProfile, totals: { total: number; responded: number
   const notifications = asBoolRecord(p?.notifications ?? {});
 
   return {
-    name: user.name ?? "",
+    name: fullName(user),                 // <- was user.name
     email: user.email,
 
     phone: p?.phone ?? "",
@@ -51,7 +54,6 @@ function toDto(user: UserWithProfile, totals: { total: number; responded: number
     github: p?.github ?? "",
     portfolio: p?.portfolio ?? "",
 
-    // minimal headliner (optional in your schema; include if you added it)
     headline:
       p && typeof (p as Record<string, unknown>)["headline"] === "string"
         ? ((p as Record<string, unknown>)["headline"] as string)
@@ -122,26 +124,24 @@ async function getAppStats(userId: string) {
 
 // ---------- Routes ----------
 export async function GET() {
-  const userId = await getUserId();
+  const me = await getCurrentUser();
+  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = me.id;
 
-  // Ensure profile exists
   const baseUser = await prisma.user.findUnique({ where: { id: userId } });
   if (!baseUser) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
-  const userWithProfile = await prisma.user.findUnique({
+  // ensure profile exists, then read once
+  await prisma.profile.upsert({
+    where: { userId },
+    update: {},
+    create: { userId },
+  });
+
+  const user = await prisma.user.findUnique({
     where: { id: userId },
     include: { profile: true },
   });
-
-  if (!userWithProfile?.profile) {
-    await prisma.profile.create({ data: { userId } });
-  }
-
-  const user: UserWithProfile | null = await prisma.user.findUnique({
-    where: { id: userId },
-    include: { profile: true },
-  });
-
   if (!user) return NextResponse.json({ error: "Not found" }, { status: 404 });
 
   const totals = await getAppStats(userId);
@@ -149,13 +149,30 @@ export async function GET() {
 }
 
 export async function PATCH(req: Request) {
-  const userId = await getUserId();
+  const me = await getCurrentUser();
+  if (!me) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  const userId = me.id;
   const body = await req.json().catch(() => ({})) as Record<string, unknown>;
 
-  // ---- Update User fields safely
+  // ---------- in PATCH ----------
   const nextUser: Prisma.UserUpdateInput = {};
-  if (typeof body.name === "string") nextUser.name = body.name.trim();
+
+  // Allow a single "name" field; split to first/last
+  if (typeof body.name === "string") {
+    const parts = body.name.trim().split(/\s+/);
+    const first = parts.shift() || null;
+    const last = parts.length ? parts.join(" ") : null;
+    nextUser.firstName = first;
+    nextUser.lastName = last;
+  }
+
+  // Also accept explicit firstName/lastName overrides
+  if (typeof body.firstName === "string") nextUser.firstName = body.firstName.trim() || null;
+  if (typeof body.lastName === "string") nextUser.lastName = body.lastName.trim() || null;
+
+  // Email stays as-is
   if (typeof body.email === "string") nextUser.email = body.email.trim();
+
   if (Object.keys(nextUser).length) {
     await prisma.user.update({ where: { id: userId }, data: nextUser });
   }

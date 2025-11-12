@@ -27,6 +27,18 @@ export async function savePartial(data: SaveData) {
     const user = await getCurrentUser();
     if (!user) throw new Error("Unauthorized");
 
+    // normalize interests if provided
+    const interestsPayload =
+        "interests" in data
+            ? Array.isArray(data.interests)
+                ? (data.interests as any[]).map((i) =>
+                    typeof i === "string"
+                        ? { category: i, subtopics: null }
+                        : { category: i.category, subtopics: i.subtopics ?? null }
+                )
+                : []
+            : undefined;
+
     await prisma.user.update({
         where: { id: user.id },
         data: {
@@ -36,10 +48,16 @@ export async function savePartial(data: SaveData) {
                 ? { birthdate: data.birthdate ? new Date(data.birthdate) : null }
                 : {}),
             ...("location" in data ? { location: data.location } : {}),
-            ...("interests" in data
-                ? { interests: (data.interests ?? []) as Prisma.InputJsonValue }
-                : {}),
             ...("level" in data ? { level: data.level } : {}),
+
+            ...(interestsPayload
+                ? {
+                    interests: {
+                        deleteMany: {},            // wipe existing InterestGroup rows for this user
+                        createMany: { data: interestsPayload }, // recreate from payload
+                    },
+                }
+                : {}),
         },
     });
 

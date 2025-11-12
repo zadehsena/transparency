@@ -3,7 +3,8 @@ import type { NextAuthOptions } from "next-auth";
 import Google from "next-auth/providers/google";
 import AzureAD from "next-auth/providers/azure-ad";
 import Credentials from "next-auth/providers/credentials";
-import { prisma } from "@/lib/prisma"; // ✅ use your shared client
+import { getServerSession } from "next-auth";
+import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
 export const authOptions: NextAuthOptions = {
@@ -17,7 +18,7 @@ export const authOptions: NextAuthOptions = {
     AzureAD({
       clientId: process.env.AZURE_AD_CLIENT_ID!,
       clientSecret: process.env.AZURE_AD_CLIENT_SECRET!,
-      tenantId: process.env.AZURE_AD_TENANT_ID!, // e.g. "common"
+      tenantId: process.env.AZURE_AD_TENANT_ID!, // e.g., "common"
     }),
     Credentials({
       name: "Credentials",
@@ -26,25 +27,49 @@ export const authOptions: NextAuthOptions = {
         password: { label: "Password", type: "password" },
       },
       async authorize(creds) {
-        if (!creds?.email || !creds?.password) return null;
-        const user = await prisma.user.findUnique({ where: { email: creds.email } });
+        const email = creds?.email?.toLowerCase().trim();
+        const password = creds?.password ?? "";
+        if (!email || !password) return null;
+
+        const user = await prisma.user.findUnique({
+          where: { email },
+          select: { id: true, email: true, password: true, firstName: true, lastName: true },
+        });
         if (!user) return null;
-        const ok = await bcrypt.compare(creds.password, user.password);
+
+        const ok = await bcrypt.compare(password, user.password);
         if (!ok) return null;
-        return { id: user.id, name: user.name ?? undefined, email: user.email };
+
+        const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined;
+        return { id: user.id, email: user.email, name };
       },
     }),
   ],
   callbacks: {
     async jwt({ token, user }) {
-      // ensure token.sub is set for credentials logins
-      if (user?.id) token.sub = user.id;
+      // copy user id into token on sign-in
+      if (user?.id) (token as any).uid = user.id;
       return token;
     },
     async session({ session, token }) {
-      // if you added the next-auth module augmentation, this is typed
-      if (token?.sub && session.user) session.user.id = token.sub;
+      // expose id on session.user for server/client use
+      if (session.user) {
+        (session.user as any).id = (token as any).uid ?? token.sub;
+      }
       return session;
     },
   },
+  secret: process.env.NEXTAUTH_SECRET || process.env.AUTH_SECRET,
 };
+
+// ---- Server helper to get the signed-in user (id/email/names) ----
+export async function getCurrentUser() {
+  const session = await getServerSession(authOptions);
+  const id = (session?.user as any)?.id as string | undefined;
+  if (!id) return null;
+
+  return prisma.user.findUnique({
+    where: { id },
+    select: { id: true, email: true, firstName: true, lastName: true },
+  });
+}
