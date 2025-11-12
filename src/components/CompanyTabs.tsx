@@ -26,17 +26,17 @@ export default function CompanyTabs({
   ];
 
   return (
-    <div className="border-b">
-      <div className="flex gap-2">
+    <div className="border-b border-gray-300 dark:border-gray-700 mt-4 mb-2">
+      <div className="flex gap-3 overflow-x-auto">
         {tabs.map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setTab(key as "overview" | "myapps" | "jobs")}
             className={clsx(
-              "px-4 py-2 text-sm transition-colors",
+              "relative px-5 py-3 text-base font-medium transition-colors duration-150 rounded-t-lg",
               active === key
-                ? "border-b-2 border-black font-medium text-black"
-                : "text-gray-600 hover:text-gray-800"
+                ? "text-gray-200 border-b-2 border-gray-400 bg-gray-800/50"
+                : "text-gray-400 hover:text-white hover:bg-gray-800/30"
             )}
           >
             {label}
@@ -45,4 +45,5 @@ export default function CompanyTabs({
       </div>
     </div>
   );
+
 }

@@ -93,17 +93,17 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       {/* Header */}
       <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <div className="flex items-center gap-2">
-            <CompanyLogo slug={company.slug} name={company.name} size={28} />
-            <h1 className="text-2xl font-semibold">{company.name}</h1>
+          <div className="flex items-center gap-4">
+            <CompanyLogo slug={company.slug} name={company.name} size={44} />
+            <h1 className="text-3xl sm:text-3xl font-bold tracking-tight">{company.name}</h1>
           </div>
-          <p className="mt-1 text-sm text-gray-600">
+          <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">
             Real response rates by business unit + live job listings
           </p>
         </div>
 
         {/* Right: Transparency Score */}
-        <div className="w-full sm:w-auto">
+        <div className="w-full sm:w-auto sm:mt-4 lg:mt-6">
           <TransparencyScore
             score={score}
             responseRate={t?.responseRate ?? company.kpis?.overallResponseRate}

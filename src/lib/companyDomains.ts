@@ -56,7 +56,6 @@ export const COMPANY_DOMAINS: Record<string, string> = {
     docker: 'docker.com',
     duolingo: 'duolingo.com',
     flexport: 'flexport.com',
-    leverdemo: 'lever.co', // sandbox/demo
 
     // --- Top Tech (manual list) ---
     google: 'google.com',

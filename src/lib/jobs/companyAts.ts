@@ -61,7 +61,6 @@ export const COMPANY_ATS: CompanyAts[] = [
   { slug: 'docker', provider: 'lever', token: 'docker' },
   { slug: 'duolingo', provider: 'lever', token: 'duolingo' },
   { slug: 'flexport', provider: 'lever', token: 'flexport' },
-  { slug: 'leverdemo', provider: 'lever', token: 'leverdemo' }, // sandbox example
 ];
 
 // Google, Apple, Microsoft, Amazon, Meta, Adobe, Oracle, Uber, Salesforce
