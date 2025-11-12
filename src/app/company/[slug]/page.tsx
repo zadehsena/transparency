@@ -9,6 +9,8 @@ import TransparencyScore from "@/components/TransparencyScore";
 import CompanyNews from "@/components/CompanyNews";
 import SimilarCompanies from "@/components/SimilarCompanies";
 import CompanySummary from "@/components/CompanySummary";
+import CompanyJobPostingsChart from "@/components/CompanyJobPostingsChart";
+import { aggregateWeekly, aggregateMonthly } from "@/lib/aggregateJobs";
 
 type Params = { slug: string };
 type Search = { tab?: string };
@@ -88,6 +90,9 @@ export default async function CompanyPage({ params, searchParams }: Props) {
     (company as any).website ??
     "";
 
+  const weekly = aggregateWeekly(company.jobs ?? [], 26);   // last 26 weeks
+  const monthly = aggregateMonthly(company.jobs ?? [], 12); // last 12 months
+
   return (
     <div className="mx-auto max-w-6xl p-4">
       {/* Header */}
@@ -144,9 +149,10 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       {/* Overview layout */}
       {activeTab === "overview" && (
         <>
-          {/* Row 1: Company info (left) + Similar companies (right) */}
-          <div className="mt-8 flex flex-col gap-8 lg:flex-row">
-            <div className="flex-1">
+          {/* Overview: left column (overview + chart) | right column (similar companies) */}
+          <div className="mt-8 grid gap-8 lg:grid-cols-4">
+            {/* Left: Company overview + Job postings chart */}
+            <div className="lg:col-span-3 flex flex-col gap-8">
               <CompanySummary
                 name={company.name}
                 hqCity={company.hqCity}
@@ -155,14 +161,22 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                 foundedYear={company.foundedYear}
                 domain={domain}
               />
+
+              <CompanyJobPostingsChart
+                weekly={weekly}
+                monthly={monthly}
+                title="New job listings over time"
+              />
             </div>
 
-            <div className="w-full lg:w-1/4">
+            {/* Right: Similar companies */}
+            <div className="lg:col-span-1">
               <SimilarCompanies items={similar} />
             </div>
           </div>
 
-          {/* Row 2: News full width */}
+
+          {/* Row 3: News full width */}
           <div className="mt-8">
             <CompanyNews name={company.name} domain={domain} ticker={ticker} />
           </div>
