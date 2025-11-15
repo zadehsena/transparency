@@ -19,7 +19,14 @@ export const COMPANY_ATS: CompanyAts[] = [
   { slug: 'plaid', provider: 'greenhouse', token: 'plaid' },
   { slug: 'robinhood', provider: 'greenhouse', token: 'robinhood' },
   { slug: 'reddit', provider: 'greenhouse', token: 'reddit' },
-  { slug: 'hubspot', provider: 'greenhouse', token: 'hubspot' },
+  { slug: 'hubspot', provider: 'greenhouse', token: 'hubspotjobs' },
+  { slug: 'klaviyo', provider: 'greenhouse', token: 'klaviyo' },
+  { slug: 'elastic', provider: 'greenhouse', token: 'elastic' },
+  { slug: 'taboola', provider: 'greenhouse', token: 'taboola' },
+  { slug: 'ripple', provider: 'greenhouse', token: 'ripple' },
+  { slug: 'purestorage', provider: 'greenhouse', token: 'purestorage' },
+  { slug: 'skydio', provider: 'greenhouse', token: 'skydio' },
+  { slug: 'metronome', provider: 'greenhouse', token: 'metronome' },
   { slug: 'asana', provider: 'greenhouse', token: 'asana' },
   { slug: 'affirm', provider: 'greenhouse', token: 'affirm' },
   { slug: 'lyft', provider: 'greenhouse', token: 'lyft' },
@@ -42,6 +49,9 @@ export const COMPANY_ATS: CompanyAts[] = [
   { slug: 'mercury', provider: 'greenhouse', token: 'mercury' },
 
   // --- Lever ---
+  { slug: 'contentsquare', provider: 'lever', token: 'contentsquare' },
+  { slug: 'getsquire', provider: 'lever', token: 'getsquire' },
+  { slug: 'better', provider: 'lever', token: 'better' },
   { slug: 'netflix', provider: 'lever', token: 'netflix' },
   { slug: 'nvidia', provider: 'lever', token: 'nvidia' },
   { slug: 'snowflake', provider: 'lever', token: 'snowflake' },
@@ -62,5 +72,3 @@ export const COMPANY_ATS: CompanyAts[] = [
   { slug: 'duolingo', provider: 'lever', token: 'duolingo' },
   { slug: 'flexport', provider: 'lever', token: 'flexport' },
 ];
-
-// Google, Apple, Microsoft, Amazon, Meta, Adobe, Oracle, Uber, Salesforce
