@@ -149,7 +149,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
       name: CATEGORY_LABEL?.[category as JobCategory] ?? category, // pretty label
       value: count,
     }))
-    .sort((a, b) => b.value - a.value); // biggest slice first
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   return {
     id: company.id,

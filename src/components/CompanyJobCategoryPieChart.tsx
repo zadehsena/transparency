@@ -15,14 +15,15 @@ export type JobCategorySlice = {
 };
 
 const COLORS = [
-    "#0EA5E9",
-    "#A855F7",
-    "#F97316",
-    "#22C55E",
-    "#EC4899",
-    "#6366F1",
-    "#FACC15",
-    "#14B8A6",
+    "#3B82F6", // blue-500
+    "#A855F7", // purple-500
+    "#10B981", // emerald-500
+    "#F59E0B", // amber-500
+    "#6366F1", // indigo-500
+    "#EC4899", // pink-500
+    "#6EE7B7", // emerald-300
+    "#F472B6", // rose-400
+    "#FBBF24", // amber-400
 ];
 
 export default function CompanyJobCategoryPieChart({
@@ -63,6 +64,8 @@ export default function CompanyJobCategoryPieChart({
                         innerRadius="55%"
                         outerRadius="80%"
                         paddingAngle={2}
+                        isAnimationActive={true}
+                        animationDuration={800}
                     >
                         {data.map((entry, index) => (
                             <Cell key={entry.name} fill={COLORS[index % COLORS.length]} />

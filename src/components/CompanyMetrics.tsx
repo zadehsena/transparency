@@ -117,5 +117,9 @@ export default function CompanyMetrics({
    Reusable chart card component
    =========================== */
 function MetricChartCard({ children }: { children: React.ReactNode }) {
-    return <div>{children}</div>;
+    return (
+        <div className="rounded-2xl border bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            {children}
+        </div>
+    );
 }
