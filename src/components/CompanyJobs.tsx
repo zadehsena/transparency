@@ -35,12 +35,14 @@ export default function CompanyJobs({
   initialJobs,
   buStats,   // <-- add this
   overall,   // <-- and this
+  companyName,
   pageSize = 25,
 }: {
   slug: string;
   initialJobs: Job[];
   buStats: BUStat[];
   overall: OverallKPIs;
+  companyName: string;
   pageSize?: number;
 }) {
   const [jobs, setJobs] = useState<Job[]>(initialJobs || []);
@@ -157,8 +159,7 @@ export default function CompanyJobs({
             location: job.location ?? "—",
             postedAt: job.postedAt,                 // already ISO
             url: job.url ?? undefined,              // make optional
-            // We’re on a company page, so omit companyName
-            companyName: null,
+            companyName,
             // unit is optional in JobCard; include if you’d like:
             // unit: job.unit ?? null,
           };

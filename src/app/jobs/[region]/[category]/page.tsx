@@ -104,7 +104,6 @@ export default async function RegionCategoryList({ params, searchParams }: PageP
             </div>
 
             {/* Results */}
-            {/* Results */}
             {jobs.length === 0 ? (
                 <p className="rounded-xl border bg-white p-6 text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
                     No open roles in this category for {REGION_LABEL[region]} right now.

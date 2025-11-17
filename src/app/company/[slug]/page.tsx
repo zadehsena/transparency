@@ -138,6 +138,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               totalApplications: company.kpis.totalApplications,
               medianResponseDays: company.kpis.medianResponseDays,
             }}
+            companyName={company.name}
           />
         )}
 

@@ -6,13 +6,13 @@ import clsx from "clsx";
 export default function CompanyTabs({
   active,
 }: {
-  active: "overview" | "myapps" | "jobs";
+  active: "overview" | "myapps" | "jobs" | "metrics";
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
 
-  const setTab = (tab: "overview" | "myapps" | "jobs") => {
+  const setTab = (tab: "overview" | "myapps" | "jobs" | "metrics") => {
     const next = new URLSearchParams(search.toString());
     if (tab === "overview") next.delete("tab");
     else next.set("tab", tab);
@@ -21,6 +21,7 @@ export default function CompanyTabs({
 
   const tabs = [
     { key: "overview", label: "Overview" },
+    { key: "metrics", label: "Metrics" },
     { key: "jobs", label: "Job Listings" },
     { key: "myapps", label: "My Applications" },
   ];
