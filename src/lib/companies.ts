@@ -16,7 +16,6 @@ export type CompanyView = {
   medianTCSalaryUSD?: number | null;
   foundedYear?: number | null;
   hqCity?: string | null;
-
   businessUnits: {
     name: string;
     applications: number;
@@ -25,7 +24,6 @@ export type CompanyView = {
     offers: number;
     medianResponseDays: number | null;
   }[];
-
   jobs: {
     id: string;
     title: string;
@@ -33,14 +31,16 @@ export type CompanyView = {
     postedAt: string;
     url: string | null;
     unit?: string;
-    category?: JobCategory | null; // ⬅️ allow null/undefined
+    category?: JobCategory | null;
   }[];
-
   jobCategories: {
     name: string;  // e.g. "Software"
     value: number; // # of open jobs
   }[];
-
+  jobRegions: {
+    name: string;
+    value: number;
+  }[];
   kpis: {
     overallResponseRate: number;
     totalApplications: number;
@@ -94,7 +94,6 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
         where: { closed: false },          // open jobs only
         orderBy: { postedAt: "desc" },
         include: { businessUnit: true },
-        take: 25,
       },
     },
   });
@@ -135,21 +134,41 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     category: j.category, // JobCategory | null
   }));
 
-  // 👇 Aggregate open jobs by category for the pie chart
-  const rawCounts = new Map<string, number>();
+  const categoryCounts = new Map<JobCategory, number>();
+  const regionCounts = new Map<string, number>();
 
-  for (const j of jobs) {
-    if (!j.category) continue; // skip jobs with no category
-    const key = j.category;    // e.g. "software"
-    rawCounts.set(key, (rawCounts.get(key) ?? 0) + 1);
+  for (const j of company.jobs) {
+    if (j.category) {
+      categoryCounts.set(
+        j.category,
+        (categoryCounts.get(j.category) ?? 0) + 1
+      );
+    }
+    if (j.region) {
+      const key = j.region; // e.g. "asia", "north_america"
+      regionCounts.set(key, (regionCounts.get(key) ?? 0) + 1);
+    }
   }
 
-  const jobCategories = Array.from(rawCounts.entries())
+  const jobCategories = Array.from(categoryCounts.entries())
     .map(([category, count]) => ({
-      name: CATEGORY_LABEL?.[category as JobCategory] ?? category, // pretty label
+      name: CATEGORY_LABEL?.[category] ?? category,
       value: count,
     }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => b.value - a.value);
+
+  const titleCase = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/_/g, " ")
+      .replace(/\b\w/g, (c) => c.toUpperCase());
+
+  const jobRegions = Array.from(regionCounts.entries())
+    .map(([region, count]) => ({
+      name: titleCase(region), // "north_america" -> "North America"
+      value: count,
+    }))
+    .sort((a, b) => b.value - a.value);
 
   return {
     id: company.id,
@@ -167,6 +186,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     businessUnits,
     jobs,
     jobCategories,
+    jobRegions,
     kpis: {
       overallResponseRate,
       totalApplications: totals.applications,
@@ -175,3 +195,4 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     updatedAt: company.updatedAt.toISOString(),
   };
 }
+

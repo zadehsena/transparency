@@ -13,7 +13,13 @@ import CompanyJobPostingsChart from "@/components/CompanyJobPostingsChart";
 import { aggregateWeeklyOpenClosed, aggregateMonthlyOpenClosed } from "@/lib/aggregateJobs";
 
 type Params = { slug: string };
-type Search = { tab?: string };
+type Search = {
+  tab?: string
+  jc?: string;   // job category
+  jr?: string;   // job region
+  unit?: string; // business unit
+  q?: string;    // search text
+};
 
 type Props = {
   params: Promise<Params>;
@@ -156,7 +162,8 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             businessUnits={company.businessUnits}
             weekly={weekly}
             monthly={monthly}
-            jobCategories={company.jobCategories}   // ⬅️ add this line
+            jobCategories={company.jobCategories}
+            jobRegions={company.jobRegions}
           />
         )}
 
@@ -185,13 +192,6 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                 employeesHigh={company.employeesHigh}
                 foundedYear={company.foundedYear}
                 domain={domain}
-              />
-
-              {/* If you’d rather only show the chart in Metrics, you can remove it here */}
-              <CompanyJobPostingsChart
-                weekly={weekly}
-                monthly={monthly}
-                title="New job listings over time"
               />
             </div>
 

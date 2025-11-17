@@ -27,12 +27,14 @@ export default function CompanyMetrics({
     weekly,
     monthly,
     jobCategories,
+    jobRegions,
 }: {
     kpis: KPI | null;
     businessUnits: BUStat[];
     weekly?: Point[];
     monthly?: Point[];
     jobCategories: { name: string; value: number }[];
+    jobRegions: { name: string; value: number }[];
 }) {
     const overall = kpis ?? {
         overallResponseRate: null,
@@ -72,12 +74,15 @@ export default function CompanyMetrics({
 
                 {/* CHART 3 */}
                 <MetricChartCard>
-                    {weekly && monthly && (
-                        <CompanyJobPostingsChart
-                            weekly={weekly}
-                            monthly={monthly}
-                            title="Response rate trend"
+                    {jobCategories?.length > 0 ? (
+                        <CompanyJobCategoryPieChart
+                            title="Jobs by category"
+                            data={jobRegions}
                         />
+                    ) : (
+                        <div className="flex h-64 items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                            No data yet for job categories.
+                        </div>
                     )}
                 </MetricChartCard>
 
