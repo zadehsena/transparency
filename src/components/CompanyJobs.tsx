@@ -10,10 +10,26 @@ export type Job = {
   location: string;
   postedAt: string;
   url?: string | null;
-  unit?: string;
+  unit?: string | null;
+  category?: string | null;
+  region?: string | null;
 };
 
-// BU stats coming from company.businessUnits
+export type CompanyJobsProps = {
+  slug: string;
+  initialJobs: Job[];
+  buStats: BUStat[];
+  overall: OverallKPIs;
+  companyName: string;
+  pageSize?: number;
+  initialFilters?: {
+    category?: string;
+    region?: string;
+    unit?: string;
+    q?: string;
+  };
+};
+
 type BUStat = {
   name: string;
   applications: number;
@@ -23,7 +39,6 @@ type BUStat = {
   medianResponseDays: number | null;
 };
 
-// Company-level KPIs from company.kpis
 type OverallKPIs = {
   overallResponseRate: number;         // %
   totalApplications: number;
@@ -33,18 +48,12 @@ type OverallKPIs = {
 export default function CompanyJobs({
   slug,
   initialJobs,
-  buStats,   // <-- add this
-  overall,   // <-- and this
+  buStats,
+  overall,
   companyName,
   pageSize = 25,
-}: {
-  slug: string;
-  initialJobs: Job[];
-  buStats: BUStat[];
-  overall: OverallKPIs;
-  companyName: string;
-  pageSize?: number;
-}) {
+  initialFilters,
+}: CompanyJobsProps) {
   const [jobs, setJobs] = useState<Job[]>(initialJobs || []);
   const [page, setPage] = useState(1);
   const [hasNext, setHasNext] = useState(true);
@@ -55,6 +64,12 @@ export default function CompanyJobs({
   const { status } = useSession();
   const isAuthed = status === "authenticated";
 
+  // ✅ filter state
+  const [category, setCategory] = useState(initialFilters?.category ?? "");
+  const [region, setRegion] = useState(initialFilters?.region ?? "");
+  const [unit, setUnit] = useState(initialFilters?.unit ?? "");
+  const [q, setQ] = useState(initialFilters?.q ?? "");
+
   // Fast lookup for BU by name
   const buMap = useMemo(() => {
     const m = new Map<string, BUStat>();
@@ -62,17 +77,15 @@ export default function CompanyJobs({
     return m;
   }, [buStats]);
 
-  // Helper: stats for a given job (BU-specific if possible, else company-level)
   function getJobStats(job: Job) {
-    const bu =
-      job.unit ? buMap.get(job.unit.toLowerCase()) : undefined;
+    const bu = job.unit
+      ? buMap.get(job.unit.toLowerCase())
+      : undefined;
 
-    // Initial response rate
     const initialRate = (() => {
       if (bu && bu.applications > 0) {
         return Math.round((bu.responses / bu.applications) * 100);
       }
-      // fallback to company overall rate
       return Math.round(overall.overallResponseRate);
     })();
 
@@ -89,6 +102,34 @@ export default function CompanyJobs({
 
     return { initialRate, interviewRate, offerRate, medianDays };
   }
+
+  // ✅ filtered jobs (client-side)
+  const filteredJobs = useMemo(() => {
+    let result = [...jobs];
+
+    if (category) {
+      result = result.filter(j => (j.category || "") === category);
+    }
+
+    if (region) {
+      result = result.filter(j => (j.region || "") === region);
+    }
+
+    if (unit) {
+      const u = unit.toLowerCase();
+      result = result.filter(j => (j.unit || "").toLowerCase() === u);
+    }
+
+    if (q) {
+      const qq = q.toLowerCase();
+      result = result.filter(j =>
+        j.title.toLowerCase().includes(qq) ||
+        (j.location || "").toLowerCase().includes(qq)
+      );
+    }
+
+    return result;
+  }, [jobs, category, region, unit, q]);
 
   // Reset when slug / initial changes
   useEffect(() => {
@@ -140,7 +181,7 @@ export default function CompanyJobs({
     }
   }
 
-  if (!jobs?.length) {
+  if (!filteredJobs?.length) {
     return (
       <div className="rounded-lg border bg-white p-6 text-sm text-gray-600">
         No active listings right now.
@@ -150,27 +191,105 @@ export default function CompanyJobs({
 
   return (
     <div>
+      {/* ✅ Filter bar */}
+      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border bg-gray-50 p-3 text-sm dark:border-gray-800 dark:bg-gray-900">
+        {/* Category */}
+        <select
+          value={category}
+          onChange={e => setCategory(e.target.value)}
+          className="rounded-xl border bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
+        >
+          <option value="">All categories</option>
+          <option value="software">Software</option>
+          <option value="data_analytics">Data Analyst</option>
+          <option value="product_management">Product Manager</option>
+          <option value="design">Design</option>
+          <option value="devops_sre">DevOps / SRE</option>
+          <option value="security">Security</option>
+          <option value="qa">QA / Test</option>
+          <option value="it_support">IT Support</option>
+          <option value="marketing">Marketing</option>
+          <option value="sales">Sales</option>
+          <option value="operations">Operations</option>
+          <option value="finance">Finance</option>
+          <option value="hr">HR / People</option>
+          <option value="legal">Legal</option>
+          <option value="other">Other</option>
+        </select>
+
+        {/* Region */}
+        <select
+          value={region}
+          onChange={e => setRegion(e.target.value)}
+          className="rounded-xl border bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
+        >
+          <option value="">All regions</option>
+          <option value="north_america">North America</option>
+          <option value="europe">Europe</option>
+          <option value="asia">Asia</option>
+          <option value="south_america">South America</option>
+          <option value="oceania">Oceania</option>
+          <option value="africa">Africa</option>
+          <option value="remote">Remote</option>
+        </select>
+
+        {/* Unit */}
+        <input
+          type="text"
+          placeholder="Filter by team / unit"
+          value={unit}
+          onChange={e => setUnit(e.target.value)}
+          className="min-w-[160px] flex-1 rounded-xl border bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
+        />
+
+        {/* Search */}
+        <input
+          type="text"
+          placeholder="Search title or location"
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          className="min-w-[180px] flex-1 rounded-xl border bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
+        />
+
+        {/* Clear */}
+        <button
+          type="button"
+          onClick={() => {
+            setCategory("");
+            setRegion("");
+            setUnit("");
+            setQ("");
+          }}
+          className="text-xs text-gray-500 underline"
+        >
+          Clear filters
+        </button>
+      </div>
+
       <ul className="space-y-3">
-        {jobs.map((job) => {
-          // Map to shared JobCard shape
+        {filteredJobs.map((job) => {
           const cardJob: JobCardJob = {
             id: job.id,
             title: job.title,
             location: job.location ?? "—",
-            postedAt: job.postedAt,                 // already ISO
-            url: job.url ?? undefined,              // make optional
+            postedAt: job.postedAt,
+            url: job.url ?? undefined,
             companyName,
-            // unit is optional in JobCard; include if you’d like:
-            // unit: job.unit ?? null,
           };
 
-          return <JobCard key={job.id} job={cardJob} stats={getJobStats(job)} isAuthed={isAuthed} />;
+          return (
+            <JobCard
+              key={job.id}
+              job={cardJob}
+              stats={getJobStats(job)}
+              isAuthed={isAuthed}
+            />
+          );
         })}
       </ul>
 
-
       <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-        <div>Showing {jobs.length}</div>
+        <div>Showing {filteredJobs.length}</div>
         <div className="flex items-center gap-2">
           {error && <span className="text-red-600">{error}</span>}
           {hasNext ? (
@@ -189,3 +308,4 @@ export default function CompanyJobs({
     </div>
   );
 }
+

@@ -60,7 +60,7 @@ function roughScore({
 
 export default async function CompanyPage({ params, searchParams }: Props) {
   const { slug } = await params;
-  const { tab } = await searchParams;
+  const { tab, jc, jr, unit, q } = await searchParams;
 
   const company = await getCompanyBySlug(slug);
   if (!company) return notFound();
@@ -153,6 +153,12 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               medianResponseDays: company.kpis.medianResponseDays,
             }}
             companyName={company.name}
+            initialFilters={{
+              category: jc ?? "",
+              region: jr ?? "",
+              unit: unit ?? "",
+              q: q ?? "",
+            }}
           />
         )}
 
