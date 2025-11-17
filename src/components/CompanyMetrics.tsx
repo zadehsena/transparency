@@ -46,49 +46,50 @@ export default function CompanyMetrics({
             ================================= */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* CHART 1 */}
-                <MetricChartCard title="Job posting trend">
+                <MetricChartCard>
                     {weekly && monthly && (
                         <CompanyJobPostingsChart
                             weekly={weekly}
                             monthly={monthly}
-                            title=""
+                            title="Job posting trend"
                         />
                     )}
                 </MetricChartCard>
 
                 {/* CHART 2 */}
-                <MetricChartCard title="Interview trend">
+                <MetricChartCard>
                     {weekly && monthly && (
                         <CompanyJobPostingsChart
                             weekly={weekly}
                             monthly={monthly}
-                            title=""
+                            title="Interview trend"
                         />
                     )}
                 </MetricChartCard>
 
                 {/* CHART 3 */}
-                <MetricChartCard title="Response rate trend">
+                <MetricChartCard>
                     {weekly && monthly && (
                         <CompanyJobPostingsChart
                             weekly={weekly}
                             monthly={monthly}
-                            title=""
+                            title="Response rate trend"
                         />
                     )}
                 </MetricChartCard>
 
                 {/* CHART 4 */}
-                <MetricChartCard title="Offer trend">
+                <MetricChartCard>
                     {weekly && monthly && (
                         <CompanyJobPostingsChart
                             weekly={weekly}
                             monthly={monthly}
-                            title=""
+                            title="Offer trend"
                         />
                     )}
                 </MetricChartCard>
             </div>
+
 
             {/* ================================
                 BUSINESS UNIT PERFORMANCE TABLE
@@ -165,19 +166,6 @@ export default function CompanyMetrics({
 /* ===========================
    Reusable chart card component
    =========================== */
-function MetricChartCard({
-    title,
-    children,
-}: {
-    title: string;
-    children: React.ReactNode;
-}) {
-    return (
-        <div className="rounded-2xl border bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <h2 className="mb-2 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                {title}
-            </h2>
-            {children}
-        </div>
-    );
+function MetricChartCard({ children }: { children: React.ReactNode }) {
+    return <div>{children}</div>;
 }
