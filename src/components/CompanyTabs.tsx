@@ -1,25 +1,28 @@
+// src/components/CompanyTabs.tsx
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import clsx from "clsx";
 
+export type CompanyTabKey = "overview" | "metrics" | "jobs" | "myapps";
+
 export default function CompanyTabs({
   active,
 }: {
-  active: "overview" | "myapps" | "jobs" | "metrics";
+  active: CompanyTabKey;
 }) {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
 
-  const setTab = (tab: "overview" | "myapps" | "jobs" | "metrics") => {
+  const setTab = (tab: CompanyTabKey) => {
     const next = new URLSearchParams(search.toString());
     if (tab === "overview") next.delete("tab");
     else next.set("tab", tab);
     router.replace(`${pathname}?${next.toString()}`, { scroll: false });
   };
 
-  const tabs = [
+  const tabs: { key: CompanyTabKey; label: string }[] = [
     { key: "overview", label: "Overview" },
     { key: "metrics", label: "Metrics" },
     { key: "jobs", label: "Job Listings" },
@@ -32,7 +35,7 @@ export default function CompanyTabs({
         {tabs.map(({ key, label }) => (
           <button
             key={key}
-            onClick={() => setTab(key as "overview" | "myapps" | "jobs")}
+            onClick={() => setTab(key)}
             className={clsx(
               "relative px-5 py-3 text-base font-medium transition-colors duration-150 rounded-t-lg",
               active === key
@@ -46,5 +49,4 @@ export default function CompanyTabs({
       </div>
     </div>
   );
-
 }
