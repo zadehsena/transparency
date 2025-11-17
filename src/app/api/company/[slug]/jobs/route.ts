@@ -1,6 +1,9 @@
 // src/app/api/company/[slug]/jobs/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
+import CompanyJobPostingsChart from "@/components/CompanyJobPostingsChart";
+import { aggregateWeeklyOpenClosed, aggregateMonthlyOpenClosed } from "@/lib/aggregateJobs";
+
 
 export const dynamic = "force-dynamic"; // so Next doesn't cache
 

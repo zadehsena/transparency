@@ -10,8 +10,7 @@ import CompanyNews from "@/components/CompanyNews";
 import SimilarCompanies from "@/components/SimilarCompanies";
 import CompanySummary from "@/components/CompanySummary";
 import CompanyJobPostingsChart from "@/components/CompanyJobPostingsChart";
-import { aggregateWeekly, aggregateMonthly } from "@/lib/aggregateJobs";
-import CompanyMyApplications from "@/components/CompanyMyApplications";
+import { aggregateWeeklyOpenClosed, aggregateMonthlyOpenClosed } from "@/lib/aggregateJobs";
 
 type Params = { slug: string };
 type Search = { tab?: string };
@@ -97,8 +96,8 @@ export default async function CompanyPage({ params, searchParams }: Props) {
     (company as any).website ??
     "";
 
-  const weekly = aggregateWeekly(company.jobs ?? [], 26); // last 26 weeks
-  const monthly = aggregateMonthly(company.jobs ?? [], 12); // last 12 months
+  const weekly = aggregateWeeklyOpenClosed(company.jobs ?? [], 26); // opened vs closed
+  const monthly = aggregateMonthlyOpenClosed(company.jobs ?? [], 12);
 
   return (
     <div className="mx-auto max-w-6xl p-4">
@@ -157,6 +156,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             businessUnits={company.businessUnits}
             weekly={weekly}
             monthly={monthly}
+            jobCategories={company.jobCategories}   // ⬅️ add this line
           />
         )}
 

@@ -54,6 +54,7 @@ model Company {
   website             String?
   stockTicker         String?
   stockExchange       String?
+  domain  String?
   revenueUSD          Int?
   businessUnits       BusinessUnit[]
   jobs                Job[]
@@ -114,6 +115,7 @@ model Job {
   externalId     String
   postedAt       DateTime      @default(now())
   closed         Boolean       @default(false)
+  closedAt       DateTime?
   companyRel     Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
   companyId      String
   businessUnit   BusinessUnit? @relation(fields: [businessUnitId], references: [id])

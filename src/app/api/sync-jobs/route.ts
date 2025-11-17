@@ -1,135 +1,21 @@
-import { NextResponse } from 'next/server';
-import { revalidatePath } from 'next/cache';
-import { prisma } from '@/lib/prisma';
-import { COMPANY_ATS } from '@/lib/jobs/companyAts';
-import { fetchGreenhouse } from '@/lib/jobs/greenhouse';
-import { fetchLever } from '@/lib/jobs/lever';
-// 👇 NEW
-import type { JobCategory } from '@prisma/client';
-import { categorizeJobTitle } from '@/lib/jobs/classify';
+// src/app/api/sync-jobs/route.ts
+import { NextResponse } from "next/server";
+import { syncJobs } from "@/lib/jobs/syncFromAts";
 
-export const dynamic = 'force-dynamic';
-
-export async function GET() {
-  return NextResponse.json({ ok: true, message: 'Use POST to run a sync.' });
-}
+export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
   try {
     const url = new URL(req.url);
-    const onlySlug = (url.searchParams.get("slug") || "").trim(); // optional single-company sync
+    const slug = (url.searchParams.get("slug") || "").trim() || undefined;
 
-    const configs = COMPANY_ATS.filter(c => (onlySlug ? c.slug === onlySlug : true));
-    const results: Array<{ slug: string; provider: string; upserted: number; closed: number; note?: string }> = [];
-
-    for (const cfg of configs) {
-      const company = await prisma.company.findUnique({ where: { slug: cfg.slug } });
-      if (!company) {
-        results.push({ slug: cfg.slug, provider: cfg.provider, upserted: 0, closed: 0, note: "company not found" });
-        continue;
-      }
-
-      // ensure a General BU exists + get its id
-      const generalBu =
-        (await prisma.businessUnit.findFirst({ where: { companyId: company.id, name: "General" }, select: { id: true } }))
-        ?? (await prisma.businessUnit.create({
-          data: { name: "General", companyId: company.id, applications: 0, responses: 0, interviews: 0, offers: 0 },
-          select: { id: true },
-        }));
-
-      // fetch postings
-      let rows: Array<{
-        externalId: string;
-        title: string;
-        location?: string;
-        url?: string | null;
-        postedAt?: string | Date;
-        unit?: string | null;               // optional BU name
-        category?: JobCategory | undefined; // 👈 NEW
-      }> = [];
-
-      try {
-        rows = cfg.provider === "greenhouse"
-          ? await fetchGreenhouse(cfg.token)
-          : await fetchLever(cfg.token);
-      } catch (err) {
-        results.push({ slug: cfg.slug, provider: cfg.provider, upserted: 0, closed: 0, note: `fetch failed: ${(err as Error)?.message ?? err}` });
-        continue;
-      }
-
-      const seen = new Set<string>();
-      let upserted = 0;
-
-      for (const r of rows) {
-        if (!r?.externalId || !r?.title) continue;
-        seen.add(r.externalId);
-
-        const bu = r.unit
-          ? await prisma.businessUnit.findFirst({ where: { companyId: company.id, name: r.unit }, select: { id: true } })
-          : null;
-
-        // 👇 Ensure we always have a category (fallback to classifier)
-        const category: JobCategory | undefined = r.category ?? (categorizeJobTitle(r.title) as JobCategory);
-
-        await prisma.job.upsert({
-          where: { ats_externalId: { ats: cfg.provider, externalId: r.externalId } },
-          update: {
-            title: r.title,
-            company: company.name, // legacy text field
-            location: r.location || "",
-            url: r.url ?? null,
-            postedAt: r.postedAt ? new Date(r.postedAt) : new Date(),
-            source: "ats",
-            companyId: company.id,
-            businessUnitId: bu?.id ?? generalBu.id, // default to General
-            closed: false,
-            category, // 👈 persist on update
-          },
-          create: {
-            title: r.title,
-            company: company.name,
-            location: r.location || "",
-            url: r.url ?? null,
-            postedAt: r.postedAt ? new Date(r.postedAt) : new Date(),
-            source: "ats",
-            ats: cfg.provider,
-            externalId: r.externalId,
-            companyId: company.id,
-            businessUnitId: bu?.id ?? generalBu.id,
-            closed: false,
-            category, // 👈 persist on create
-          },
-        });
-
-        upserted++;
-      }
-
-      // Close postings that disappeared
-      const toClose =
-        rows
-          ? await prisma.job.findMany({
-            where: { companyId: company.id, ats: cfg.provider, closed: false },
-            select: { id: true, externalId: true },
-          }).then(list => list.filter(j => !seen.has(j.externalId)))
-          : [];
-
-      let closed = 0;
-      if (toClose.length > 0) {
-        await prisma.job.updateMany({
-          where: { id: { in: toClose.map(j => j.id) } },
-          data: { closed: true },
-        });
-        closed = toClose.length;
-      }
-
-      results.push({ slug: cfg.slug, provider: cfg.provider, upserted, closed });
-      revalidatePath(`/company/${cfg.slug}`);
-    }
-
+    const { results } = await syncJobs(slug);
     return NextResponse.json({ ok: true, results });
-  } catch (e: unknown) {
-    const message = e instanceof Error ? e.message : "Unknown error";
+  } catch (e: any) {
     console.error("sync-jobs failed:", e);
-    return NextResponse.json({ ok: false, error: message }, { status: 500 });
+    return NextResponse.json(
+      { ok: false, error: e?.message ?? "Unknown error" },
+      { status: 500 },
+    );
   }
 }

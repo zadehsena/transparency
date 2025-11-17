@@ -1,5 +1,8 @@
 // src/lib/aggregateJobs.ts
-type Job = { postedAt?: string | Date | null };
+type Job = {
+    postedAt?: string | Date | null;
+    closedAt?: string | Date | null;  // 👈 new
+};
 
 function toUTCDate(d: string | Date) {
     const x = new Date(d);
@@ -79,6 +82,74 @@ export function aggregateMonthly(jobs: Job[], months = 12) {
     for (let t = new Date(start); t <= end; t = addMonthsUTC(t, 1)) {
         const key = fmt(t);
         out.push({ date: key, count: counts.get(key) ?? 0 });
+    }
+    return out;
+}
+
+export function aggregateWeeklyOpenClosed(jobs: Job[], weeks = 26) {
+    const opened = new Map<string, number>();
+    const closed = new Map<string, number>();
+
+    for (const j of jobs) {
+        if (j.postedAt) {
+            const d = toUTCDate(j.postedAt);
+            const bucket = startOfISOWeekUTC(d);
+            const key = fmt(bucket);
+            opened.set(key, (opened.get(key) ?? 0) + 1);
+        }
+        if (j.closedAt) {
+            const d = toUTCDate(j.closedAt);
+            const bucket = startOfISOWeekUTC(d);
+            const key = fmt(bucket);
+            closed.set(key, (closed.get(key) ?? 0) + 1);
+        }
+    }
+
+    const end = startOfISOWeekUTC(new Date());
+    const start = addWeeksUTC(end, -(weeks - 1));
+
+    const out: { date: string; opened: number; closed: number }[] = [];
+    for (let t = new Date(start); t <= end; t = addWeeksUTC(t, 1)) {
+        const key = fmt(t);
+        out.push({
+            date: key,
+            opened: opened.get(key) ?? 0,
+            closed: closed.get(key) ?? 0,
+        });
+    }
+    return out;
+}
+
+export function aggregateMonthlyOpenClosed(jobs: Job[], months = 12) {
+    const opened = new Map<string, number>();
+    const closed = new Map<string, number>();
+
+    for (const j of jobs) {
+        if (j.postedAt) {
+            const d = toUTCDate(j.postedAt);
+            const bucket = startOfMonthUTC(d);
+            const key = fmt(bucket);
+            opened.set(key, (opened.get(key) ?? 0) + 1);
+        }
+        if (j.closedAt) {
+            const d = toUTCDate(j.closedAt);
+            const bucket = startOfMonthUTC(d);
+            const key = fmt(bucket);
+            closed.set(key, (closed.get(key) ?? 0) + 1);
+        }
+    }
+
+    const end = startOfMonthUTC(new Date());
+    const start = addMonthsUTC(end, -(months - 1));
+
+    const out: { date: string; opened: number; closed: number }[] = [];
+    for (let t = new Date(start); t <= end; t = addMonthsUTC(t, 1)) {
+        const key = fmt(t);
+        out.push({
+            date: key,
+            opened: opened.get(key) ?? 0,
+            closed: closed.get(key) ?? 0,
+        });
     }
     return out;
 }
