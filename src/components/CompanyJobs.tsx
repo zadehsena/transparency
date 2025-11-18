@@ -181,17 +181,9 @@ export default function CompanyJobs({
     }
   }
 
-  if (!filteredJobs?.length) {
-    return (
-      <div className="rounded-lg border bg-white p-6 text-sm text-gray-600">
-        No active listings right now.
-      </div>
-    );
-  }
-
   return (
     <div>
-      {/* ✅ Filter bar */}
+      {/* ✅ Filter bar ALWAYS visible */}
       <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border bg-gray-50 p-3 text-sm dark:border-gray-800 dark:bg-gray-900">
         {/* Category */}
         <select
@@ -266,45 +258,66 @@ export default function CompanyJobs({
         </button>
       </div>
 
-      <ul className="space-y-3">
-        {filteredJobs.map((job) => {
-          const cardJob: JobCardJob = {
-            id: job.id,
-            title: job.title,
-            location: job.location ?? "—",
-            postedAt: job.postedAt,
-            url: job.url ?? undefined,
-            companyName,
-          };
-
-          return (
-            <JobCard
-              key={job.id}
-              job={cardJob}
-              stats={getJobStats(job)}
-              isAuthed={isAuthed}
-            />
-          );
-        })}
-      </ul>
-
-      <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-        <div>Showing {filteredJobs.length}</div>
-        <div className="flex items-center gap-2">
-          {error && <span className="text-red-600">{error}</span>}
-          {hasNext ? (
-            <button
-              onClick={loadMore}
-              disabled={loading}
-              className="rounded-xl bg-black px-3 py-2 text-white disabled:opacity-60"
-            >
-              {loading ? 'Loading…' : 'Load more'}
-            </button>
-          ) : (
-            <span>End</span>
-          )}
+      {/* ✅ Results OR empty state, but filter bar stays */}
+      {filteredJobs.length === 0 ? (
+        <div className="rounded-lg border bg-white p-6 text-sm text-gray-600">
+          No active listings match your filters.
+          <button
+            type="button"
+            onClick={() => {
+              setCategory("");
+              setRegion("");
+              setUnit("");
+              setQ("");
+            }}
+            className="ml-2 text-xs text-blue-600 underline"
+          >
+            Clear filters
+          </button>
         </div>
-      </div>
+      ) : (
+        <>
+          <ul className="space-y-3">
+            {filteredJobs.map((job) => {
+              const cardJob: JobCardJob = {
+                id: job.id,
+                title: job.title,
+                location: job.location ?? "—",
+                postedAt: job.postedAt,
+                url: job.url ?? undefined,
+                companyName,
+              };
+
+              return (
+                <JobCard
+                  key={job.id}
+                  job={cardJob}
+                  stats={getJobStats(job)}
+                  isAuthed={isAuthed}
+                />
+              );
+            })}
+          </ul>
+
+          <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+            <div>Showing {filteredJobs.length}</div>
+            <div className="flex items-center gap-2">
+              {error && <span className="text-red-600">{error}</span>}
+              {hasNext ? (
+                <button
+                  onClick={loadMore}
+                  disabled={loading}
+                  className="rounded-xl bg-black px-3 py-2 text-white disabled:opacity-60"
+                >
+                  {loading ? 'Loading…' : 'Load more'}
+                </button>
+              ) : (
+                <span>End</span>
+              )}
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 }
