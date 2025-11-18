@@ -9,9 +9,13 @@ import TransparencyScore from "@/components/TransparencyScore";
 import CompanyNews from "@/components/CompanyNews";
 import SimilarCompanies from "@/components/SimilarCompanies";
 import CompanySummary from "@/components/CompanySummary";
-import CompanyJobPostingsChart from "@/components/CompanyJobPostingsChart";
 import CompanyMyApplications from "@/components/CompanyMyApplications";
 import { aggregateWeeklyOpenClosed, aggregateMonthlyOpenClosed } from "@/lib/aggregateJobs";
+import Image from "next/image";
+import type { JobCategory } from "@prisma/client";
+import { CATEGORY_ORDER, LABEL as CATEGORY_LABEL, CATEGORY_ICONS } from "@/lib/jobs/categoryMeta";
+
+
 
 type Params = { slug: string };
 type Search = {
@@ -65,6 +69,14 @@ export default async function CompanyPage({ params, searchParams }: Props) {
 
   const company = await getCompanyBySlug(slug);
   if (!company) return notFound();
+
+  const openCategories =
+    (company.jobCategories ?? []).filter((c) => c.value > 0);
+
+  const CATEGORY_BY_LABEL: Record<string, JobCategory> = Object.fromEntries(
+    CATEGORY_ORDER.map((key) => [CATEGORY_LABEL[key], key])
+  ) as Record<string, JobCategory>;
+
 
   // ✅ Parse active tab safely, including "metrics"
   const rawTab = tab ?? "overview";
@@ -196,6 +208,49 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                 foundedYear={company.foundedYear}
                 domain={domain}
               />
+
+              {/* 🔹 Open roles by category */}
+              {openCategories.length > 0 && (
+                <section>
+                  <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
+                    Open roles by category
+                  </h2>
+                  <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+                    {openCategories.map((cat) => {
+                      const key = CATEGORY_BY_LABEL[cat.name] ?? "other";
+                      const label = CATEGORY_LABEL[key];
+                      const iconSrc = CATEGORY_ICONS[key];
+
+                      return (
+                        <div
+                          key={cat.name}
+                          className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-slate-950/40 px-4 py-3"
+                        >
+                          {/* Icon bubble */}
+                          <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-slate-900/70">
+                            <img
+                              src={iconSrc}
+                              alt={label}
+                              className="h-5 w-5 object-contain"
+                            />
+                          </div>
+
+                          {/* Text */}
+                          <div className="flex flex-col">
+                            <span className="text-sm font-medium text-gray-100">
+                              {label}
+                            </span>
+                            <span className="text-xs text-gray-400">
+                              {cat.value} open role{cat.value === 1 ? "" : "s"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+
+                  </div>
+                </section>
+              )}
             </div>
 
             {/* Right: Similar companies */}
