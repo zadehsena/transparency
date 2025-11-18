@@ -1,6 +1,6 @@
 // src/lib/companies.ts
 import { prisma } from "@/lib/prisma";
-import type { JobCategory } from "@prisma/client";
+import type { JobCategory, Region } from "@prisma/client";
 import { LABEL as CATEGORY_LABEL } from "@/lib/jobs/categoryMeta";
 
 export type CompanyView = {
@@ -32,6 +32,7 @@ export type CompanyView = {
     url: string | null;
     unit?: string;
     category?: JobCategory | null;
+    region?: Region | null;
   }[];
   jobCategories: {
     name: string;  // e.g. "Software"
@@ -132,6 +133,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     url: j.url,
     unit: j.businessUnit?.name,
     category: j.category, // JobCategory | null
+    region: j.region,
   }));
 
   const categoryCounts = new Map<JobCategory, number>();
