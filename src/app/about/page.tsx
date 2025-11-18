@@ -81,7 +81,7 @@ export default function AboutPage() {
                     </p>
                     <ul className="list-inside list-disc space-y-2">
                         <li>
-                            <span className="font-medium">Job sources:</span> openings from popular ATS platforms (e.g., Greenhouse, Lever) and curated feeds.
+                            <span className="font-medium">Job sources:</span> openings from popular ATS platforms (e.g., Greenhouse) and curated feeds.
                         </li>
                         <li>
                             <span className="font-medium">Application signals:</span> anonymous, user-submitted outcomes (e.g., no response, recruiter reply, interview, offer).

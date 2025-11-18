@@ -2,7 +2,6 @@
 import { prisma } from "../prisma";
 import { COMPANY_ATS } from "./companyAts";
 import { fetchGreenhouse } from "./greenhouse";
-import { fetchLever } from "./lever";
 import { categorizeJobTitle } from "./classify";
 import type { JobCategory } from "@prisma/client";
 
@@ -57,10 +56,7 @@ export async function syncJobs(onlySlug?: string) {
         }> = [];
 
         try {
-            rows =
-                cfg.provider === "greenhouse"
-                    ? await fetchGreenhouse(cfg.token)
-                    : await fetchLever(cfg.token);
+            rows = await fetchGreenhouse(cfg.token);
         } catch (err) {
             results.push({
                 slug: cfg.slug,

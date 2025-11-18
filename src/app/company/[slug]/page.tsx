@@ -11,8 +11,8 @@ import SimilarCompanies from "@/components/SimilarCompanies";
 import CompanySummary from "@/components/CompanySummary";
 import CompanyMyApplications from "@/components/CompanyMyApplications";
 import { aggregateWeeklyOpenClosed, aggregateMonthlyOpenClosed } from "@/lib/aggregateJobs";
-import Image from "next/image";
 import type { JobCategory } from "@prisma/client";
+import Link from "next/link";
 import { CATEGORY_ORDER, LABEL as CATEGORY_LABEL, CATEGORY_ICONS } from "@/lib/jobs/categoryMeta";
 
 
@@ -222,9 +222,16 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                       const iconSrc = CATEGORY_ICONS[key];
 
                       return (
-                        <div
+                        <Link
                           key={cat.name}
-                          className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-slate-950/40 px-4 py-3"
+                          href={{
+                            pathname: `/company/${company.slug}`,
+                            query: {
+                              tab: "jobs",
+                              jc: key, // JobCategory enum key, used by CompanyJobs initialFilters
+                            },
+                          }}
+                          className="flex items-center gap-3 rounded-2xl border border-gray-800 bg-slate-950/40 px-4 py-3 cursor-pointer transition hover:border-gray-600 hover:bg-slate-900"
                         >
                           {/* Icon bubble */}
                           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-slate-900/70">
@@ -244,10 +251,9 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                               {cat.value} open role{cat.value === 1 ? "" : "s"}
                             </span>
                           </div>
-                        </div>
+                        </Link>
                       );
                     })}
-
                   </div>
                 </section>
               )}

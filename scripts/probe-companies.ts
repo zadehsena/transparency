@@ -13,16 +13,6 @@ async function probeCompany(c: CompanyAts): Promise<string> {
             } else {
                 return `${c.slug.padEnd(15)} GH  ${res.status}`;
             }
-        } else if (c.provider === "lever") {
-            const url = `https://api.lever.co/v0/postings/${c.token}?mode=json&limit=1`;
-            const res = await fetch(url);
-            if (res.ok) {
-                const data = (await res.json()) as any[];
-                const count = data.length;
-                return `${c.slug.padEnd(15)} LV  ${res.status} (${count} jobs on page 1)`;
-            } else {
-                return `${c.slug.padEnd(15)} LV  ${res.status}`;
-            }
         } else {
             return `${c.slug.padEnd(15)} ??  unsupported provider`;
         }
