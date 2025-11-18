@@ -1,70 +1,92 @@
+// src/components/CompanyMyApplications.tsx
 "use client";
 
-import JobCard, { type JobCardJob, type JobCardStats } from "@/components/JobCard";
-
-export type CompanyApplication = {
-    id: string;
-    status: string;               // enum from Prisma
-    appliedAt: string;            // ISO string
-    job: {
-        id: string;
-        title: string;
-        location: string | null;
-        postedAt: string;
-        url?: string | null;
+type CompanyMyApplicationsProps = {
+    slug: string;
+    name: string;
+    stats?: {
+        applied: number;
+        rejected: number;
+        interviews: number;
+        offers: number;
     };
 };
 
+const LABELS = {
+    applied: "Applications submitted",
+    rejected: "Rejected",
+    interviews: "Reached interview",
+    offers: "Offers received",
+};
+
 export default function CompanyMyApplications({
-    applications,
-}: {
-    applications: CompanyApplication[];
-}) {
-    if (!applications.length) {
-        return (
-            <div className="rounded-xl border bg-white p-6 text-gray-600 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
-                You haven’t applied to any roles at this company yet.
-            </div>
-        );
-    }
+    slug,
+    name,
+    stats,
+}: CompanyMyApplicationsProps) {
+    const s = stats ?? {
+        applied: 0,
+        rejected: 0,
+        interviews: 0,
+        offers: 0,
+    };
+
+    const items = [
+        {
+            key: "applied" as const,
+            label: LABELS.applied,
+            value: s.applied,
+        },
+        {
+            key: "rejected" as const,
+            label: LABELS.rejected,
+            value: s.rejected,
+        },
+        {
+            key: "interviews" as const,
+            label: LABELS.interviews,
+            value: s.interviews,
+        },
+        {
+            key: "offers" as const,
+            label: LABELS.offers,
+            value: s.offers,
+        },
+    ];
 
     return (
-        <div className="space-y-4">
-            {applications.map((app) => {
-                const { job } = app;
+        <div className="rounded-2xl border bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
+            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+                <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
+                    My application stats at {name}
+                </h2>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Company: <span className="font-mono text-[11px]">{slug}</span>
+                </p>
+            </div>
 
-                const cardJob: JobCardJob = {
-                    id: job.id,
-                    title: job.title,
-                    location: job.location ?? "—",
-                    postedAt: job.postedAt,
-                    url: job.url ?? undefined,
-                    companyName: null, // we are already inside the company page
-                };
-
-                const stats: JobCardStats = null; // hide job stats for application history
-
-                const appliedPretty = new Date(app.appliedAt).toLocaleDateString(undefined, {
-                    year: "numeric",
-                    month: "short",
-                    day: "numeric",
-                });
-
-                return (
-                    <div key={app.id} className="space-y-1">
-                        <JobCard job={cardJob} stats={stats} isAuthed={true} />
-
-                        {/* Status + applied date row */}
-                        <div className="ml-2 mt-1 flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400">
-                            <span className="rounded-md bg-gray-800/20 px-2 py-0.5 text-gray-300 capitalize">
-                                {app.status.replace("_", " ")}
-                            </span>
-                            <span>•</span>
-                            <span>Applied {appliedPretty}</span>
-                        </div>
+            {/* Stat blocks */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+                {items.map((item) => (
+                    <div
+                        key={item.key}
+                        className="rounded-xl border border-gray-100 bg-gray-50 px-3 py-3 text-sm dark:border-gray-800 dark:bg-gray-950"
+                    >
+                        <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+                            {item.label}
+                        </p>
+                        <p className="mt-1 text-2xl font-semibold text-gray-900 dark:text-gray-50">
+                            {item.value}
+                        </p>
                     </div>
-                );
-            })}
+                ))}
+            </div>
+
+            {/* Placeholder / future state */}
+            <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
+                This view will later show your actual applications to {name} once
+                tracking is connected. For now, these are placeholder counts.
+            </p>
         </div>
     );
 }

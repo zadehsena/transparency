@@ -10,6 +10,7 @@ import CompanyNews from "@/components/CompanyNews";
 import SimilarCompanies from "@/components/SimilarCompanies";
 import CompanySummary from "@/components/CompanySummary";
 import CompanyJobPostingsChart from "@/components/CompanyJobPostingsChart";
+import CompanyMyApplications from "@/components/CompanyMyApplications";
 import { aggregateWeeklyOpenClosed, aggregateMonthlyOpenClosed } from "@/lib/aggregateJobs";
 
 type Params = { slug: string };
@@ -173,15 +174,11 @@ export default async function CompanyPage({ params, searchParams }: Props) {
           />
         )}
 
-        {/* ✅ MY APPLICATIONS tab: simple placeholder for now */}
         {activeTab === "myapps" && (
-          <div className="rounded-2xl border bg-white p-6 text-sm text-gray-700 shadow-sm dark:border-gray-800 dark:bg-gray-900 dark:text-gray-200">
-            <p>
-              My applications with <span className="font-semibold">{company.name}</span> will
-              appear here. Next step is to query your <code>Application</code> records for this
-              company and render them with <code>JobCard</code>.
-            </p>
-          </div>
+          <CompanyMyApplications
+            slug={company.slug}
+            name={company.name}
+          />
         )}
       </div>
 
