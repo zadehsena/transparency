@@ -36,13 +36,6 @@ export default function CompanyMetrics({
     jobCategories: { name: string; value: number }[];
     jobRegions: { name: string; value: number }[];
 }) {
-    const overall = kpis ?? {
-        overallResponseRate: null,
-        interviewRate: null,
-        offerRate: null,
-        medianResponseDays: null,
-        totalApplications: null,
-    };
 
     return (
         <div className="space-y-10">

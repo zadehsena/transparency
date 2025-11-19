@@ -1,21 +1,33 @@
 // src/app/company/[slug]/page.tsx
 import { notFound } from "next/navigation";
-import { getCompanyBySlug, getRandomCompanies } from "@/lib/companies";
+import {
+  getCompanyBySlug,
+  getRandomCompanies,
+  type CompanyView,
+} from "@/lib/companies";
 import CompanyTabs, { type CompanyTabKey } from "@/components/CompanyTabs";
 import CompanyMetrics from "@/components/CompanyMetrics";
 import CompanyJobs from "@/components/CompanyJobs";
 import CompanyLogo from "@/components/CompanyLogo";
-import TransparencyScore from "@/components/TransparencyScore";
+import TransparencyScore, {
+  type TransparencyProps,
+} from "@/components/TransparencyScore";
 import CompanyNews from "@/components/CompanyNews";
 import SimilarCompanies from "@/components/SimilarCompanies";
 import CompanySummary from "@/components/CompanySummary";
 import CompanyMyApplications from "@/components/CompanyMyApplications";
-import { aggregateWeeklyOpenClosed, aggregateMonthlyOpenClosed } from "@/lib/aggregateJobs";
+import {
+  aggregateWeeklyOpenClosed,
+  aggregateMonthlyOpenClosed,
+} from "@/lib/aggregateJobs";
 import type { JobCategory } from "@prisma/client";
 import Link from "next/link";
-import { CATEGORY_ORDER, LABEL as CATEGORY_LABEL, CATEGORY_ICONS } from "@/lib/jobs/categoryMeta";
-
-
+import Image from "next/image";
+import {
+  CATEGORY_ORDER,
+  LABEL as CATEGORY_LABEL,
+  CATEGORY_ICONS,
+} from "@/lib/jobs/categoryMeta";
 
 type Params = { slug: string };
 type Search = {
@@ -29,6 +41,13 @@ type Search = {
 type Props = {
   params: Promise<Params>;
   searchParams: Promise<Search>;
+};
+type CompanyWithExtras = CompanyView & {
+  transparency?: TransparencyProps;
+  ticker?: string | null;
+  domain?: string | null;
+  websiteDomain?: string | null;
+  website?: string | null;
 };
 
 export const revalidate = 60;
@@ -88,16 +107,8 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   // similar companies (random for now, excluding current)
   const similar = await getRandomCompanies(5, company.slug);
 
-  const t = (company as any).transparency as
-    | {
-      score?: number | null;
-      responseRate?: number | null;
-      avgReplyDays?: number | null;
-      salaryDisclosure?: number | null;
-      jobAccuracy?: number | null;
-      trend90d?: number | null;
-    }
-    | undefined;
+  const extended = company as CompanyWithExtras;
+  const t: TransparencyProps | undefined = extended.transparency;
 
   const score =
     t?.score ??
@@ -108,12 +119,9 @@ export default async function CompanyPage({ params, searchParams }: Props) {
       jobAccuracy: t?.jobAccuracy,
     });
 
-  const ticker = (company as any).ticker ?? "";
+  const ticker = extended.ticker ?? "";
   const domain =
-    (company as any).domain ??
-    (company as any).websiteDomain ??
-    (company as any).website ??
-    "";
+    extended.domain ?? extended.websiteDomain ?? extended.website ?? "";
 
   const weekly = aggregateWeeklyOpenClosed(company.jobs ?? [], 26); // opened vs closed
   const monthly = aggregateMonthlyOpenClosed(company.jobs ?? [], 12);
@@ -235,9 +243,11 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                         >
                           {/* Icon bubble */}
                           <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl bg-slate-900/70">
-                            <img
+                            <Image
                               src={iconSrc}
                               alt={label}
+                              width={20}
+                              height={20}
                               className="h-5 w-5 object-contain"
                             />
                           </div>

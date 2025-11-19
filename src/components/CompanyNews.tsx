@@ -22,8 +22,10 @@ export default function CompanyNews({ name, domain = "", ticker = "" }: Props) {
                 const data = await res.json();
                 if (!res.ok) throw new Error(data?.error || "Failed to load");
                 setItems((data.items || []).slice(0, 3));
-            } catch (e: any) {
-                setErr(e?.message || "Error");
+            } catch (e: unknown) {
+                const message =
+                    e instanceof Error ? e.message : "Error";
+                setErr(message);
             } finally {
                 setLoading(false);
             }

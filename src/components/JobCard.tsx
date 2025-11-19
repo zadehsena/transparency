@@ -42,9 +42,8 @@ export default function JobCard({
             className="group relative rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md cursor-pointer dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80"
             role={job.url ? "link" : undefined}
             tabIndex={job.url ? 0 : -1}
-            onClick={(e) => {
+            onClick={() => {
                 if (!job.url) return;
-                // if a child called stopPropagation, do nothing
                 window.open(job.url, "_blank", "noopener,noreferrer");
             }}
             onKeyDown={(e) => {

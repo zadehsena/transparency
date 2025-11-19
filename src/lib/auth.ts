@@ -1,9 +1,10 @@
 // src/lib/auth.ts
 import type { NextAuthOptions } from "next-auth";
+import type { JWT } from "next-auth/jwt";
+import { getServerSession } from "next-auth";
 import Google from "next-auth/providers/google";
 import AzureAD from "next-auth/providers/azure-ad";
 import Credentials from "next-auth/providers/credentials";
-import { getServerSession } from "next-auth";
 import { prisma } from "@/lib/prisma";
 import bcrypt from "bcrypt";
 
@@ -33,14 +34,22 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: { email },
-          select: { id: true, email: true, password: true, firstName: true, lastName: true },
+          select: {
+            id: true,
+            email: true,
+            password: true,
+            firstName: true,
+            lastName: true,
+          },
         });
         if (!user) return null;
 
         const ok = await bcrypt.compare(password, user.password);
         if (!ok) return null;
 
-        const name = [user.firstName, user.lastName].filter(Boolean).join(" ") || undefined;
+        const name =
+          [user.firstName, user.lastName].filter(Boolean).join(" ") ||
+          undefined;
         return { id: user.id, email: user.email, name };
       },
     }),
@@ -48,13 +57,16 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       // copy user id into token on sign-in
-      if (user?.id) (token as any).uid = user.id;
+      if (user?.id) {
+        (token as JWT).uid = user.id;
+      }
       return token;
     },
     async session({ session, token }) {
       // expose id on session.user for server/client use
       if (session.user) {
-        (session.user as any).id = (token as any).uid ?? token.sub;
+        const jwt = token as JWT;
+        session.user.id = jwt.uid ?? token.sub ?? undefined;
       }
       return session;
     },
@@ -65,7 +77,7 @@ export const authOptions: NextAuthOptions = {
 // ---- Server helper to get the signed-in user (id/email/names) ----
 export async function getCurrentUser() {
   const session = await getServerSession(authOptions);
-  const id = (session?.user as any)?.id as string | undefined;
+  const id = session?.user?.id;
   if (!id) return null;
 
   return prisma.user.findUnique({

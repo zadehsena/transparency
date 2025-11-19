@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useMemo, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { useOnboarding } from "../OnboardingContext";
 import { savePartial } from "@/app/onboarding/actions";
 

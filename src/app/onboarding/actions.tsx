@@ -5,7 +5,6 @@ import { prisma } from "@/lib/prisma";
 import { revalidatePath } from "next/cache";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
-import type { Prisma } from "@prisma/client";
 
 async function getCurrentUser() {
     const session = await getServerSession(authOptions);
