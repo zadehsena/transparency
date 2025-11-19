@@ -22,7 +22,6 @@ type BUStat = {
 };
 
 export default function CompanyMetrics({
-    kpis,
     businessUnits,
     weekly,
     monthly,

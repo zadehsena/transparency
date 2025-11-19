@@ -45,9 +45,6 @@ type Application = {
   firstResponseAt?: string; // ISO (optional)
 };
 
-const ALL_INTERESTS = ["Software", "Data", "Product", "Design", "DevOps", "Security"] as const;
-const LEVELS = ["Entry", "Mid", "Senior", "Director", "VP", "Other"] as const;
-
 /* =========================
    Helpers
    ========================= */
@@ -78,11 +75,6 @@ function formatDate(iso: string) {
   return Number.isNaN(d.getTime()) ? "—" :
     d.toLocaleDateString(undefined, { year: "numeric", month: "short", day: "numeric" });
 }
-function isoForDateInput(iso?: string | null) {
-  if (!iso) return "";
-  const d = new Date(iso);
-  return Number.isNaN(d.getTime()) ? "" : d.toISOString().slice(0, 10);
-}
 
 /* =========================
    Skeleton
@@ -104,13 +96,7 @@ function ProfileContent() {
   const [initial, setInitial] = useState<Profile | null>(null);
   const [apps, setApps] = useState<Application[] | null>(null);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [, setError] = useState<string | null>(null);
-
-  const isDirty = useMemo(
-    () => form && initial && JSON.stringify(form) !== JSON.stringify(initial),
-    [form, initial]
-  );
 
   // tabs in URL
   const router = useRouter();
@@ -164,27 +150,6 @@ function ProfileContent() {
 
   const update = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setForm(prev => (prev ? { ...prev, [key]: value } : prev));
-
-  const patch = async () => {
-    if (!form) return;
-    setSaving(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/profile", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      const saved = (await res.json()) as Profile;
-      setInitial(saved);
-      setForm(saved);
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : "Save failed");
-    } finally {
-      setSaving(false);
-    }
-  };
 
   if (loading || !form) return <Skeleton />;
 
@@ -345,44 +310,7 @@ export default function ProfilePage() {
   );
 }
 
-/* =========================
-   Small UI bits
-   ========================= */
-function Field({
-  label, value, onChange, type = "text", placeholder,
-}: {
-  label: string; value: string; onChange: (v: string) => void; type?: string; placeholder?: string;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
-      <input
-        type={type}
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full rounded-lg border px-3 py-2 outline-none ring-1 ring-transparent focus:ring-2 focus:ring-gray-900/20 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
-      />
-    </label>
-  );
-}
-
-function Toggle({ label, checked, onChange }: { label: string; checked: boolean; onChange: (v: boolean) => void }) {
-  return (
-    <label className="flex items-center gap-3">
-      <span className="text-sm text-gray-800 dark:text-gray-200">{label}</span>
-      <button
-        type="button"
-        onClick={() => onChange(!checked)}
-        className={`relative h-6 w-11 rounded-full border transition-colors dark:border-gray-700 ${checked ? "bg-gray-900" : "bg-gray-200 dark:bg-gray-800"}`}
-        aria-pressed={checked}
-      >
-        <span className={`absolute top-0.5 h-5 w-5 rounded-full bg-white transition-all ${checked ? "right-0.5" : "left-0.5"}`} />
-      </button>
-    </label>
-  );
-}
-
+// Small UI bits
 function Select<T extends string>({
   label, value, options, onChange,
 }: {

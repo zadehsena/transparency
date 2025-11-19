@@ -44,7 +44,6 @@ export default function SignupModal({
     const [showPw, setShowPw] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [pwFocused, setPwFocused] = useState(false);
 
     const reqs = useMemo(() => validatePassword(form.password), [form.password]);
     const canSubmit = !loading && AllGood(reqs) && !!form.email;
@@ -114,8 +113,6 @@ export default function SignupModal({
                             required
                             aria-describedby="pw-help"
                             value={form.password}
-                            onFocus={() => setPwFocused(true)}
-                            onBlur={() => setPwFocused(false)}
                             onChange={(e) =>
                                 setForm((s) => ({ ...s, password: e.target.value }))
                             }

@@ -11,10 +11,18 @@ export async function POST(req: Request) {
 
     const { results } = await syncJobs(slug);
     return NextResponse.json({ ok: true, results });
-  } catch (e: any) {
+  } catch (e: unknown) {
     console.error("sync-jobs failed:", e);
+
+    const message =
+      e instanceof Error
+        ? e.message
+        : typeof e === "string"
+          ? e
+          : "Unknown error";
+
     return NextResponse.json(
-      { ok: false, error: e?.message ?? "Unknown error" },
+      { ok: false, error: message },
       { status: 500 },
     );
   }
