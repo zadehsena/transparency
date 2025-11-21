@@ -36,8 +36,6 @@ function toDto(user: UserWithProfile, totals: { total: number; responded: number
 
   const skills = asStringArray(p?.skills ?? []);
   const industries = asStringArray(p?.industries ?? []);
-  const jobTypes = asStringArray(p?.jobTypes ?? []);
-  const preferredLocations = asStringArray(p?.preferredLocations ?? []);
   const notifications = asBoolRecord(p?.notifications ?? {});
 
   return {
@@ -46,33 +44,13 @@ function toDto(user: UserWithProfile, totals: { total: number; responded: number
 
     phone: p?.phone ?? "",
     location: p?.location ?? "",
-    visibility: (p?.visibility ?? "everyone") as "everyone" | "employers" | "private",
-    openToWork: p?.openToWork ?? true,
-
-    website: p?.website ?? "",
-    linkedin: p?.linkedin ?? "",
-    github: p?.github ?? "",
-    portfolio: p?.portfolio ?? "",
-
     headline:
       p && typeof (p as Record<string, unknown>)["headline"] === "string"
         ? ((p as Record<string, unknown>)["headline"] as string)
         : "",
-
     yearsExperience: p?.yearsExperience ?? null,
-    seniority: p?.seniority ?? null,
     skills,
     industries,
-    summary: p?.summary ?? "",
-
-    desiredSalaryMin: p?.desiredSalaryMin ?? null,
-    desiredSalaryMax: p?.desiredSalaryMax ?? null,
-    salaryCurrency: p?.salaryCurrency ?? "USD",
-    remotePreference: p?.remotePreference ?? "noPreference",
-    willingToRelocate: p?.willingToRelocate ?? false,
-    jobTypes,
-    preferredLocations,
-
     notifications: Object.keys(notifications).length
       ? notifications
       : { jobMatches: true, companyUpdates: true },

@@ -80,8 +80,10 @@ export default function ProfileSettings({
             if (!res.ok) throw new Error(await res.text());
             const saved = await res.json();
             onSaved?.(saved);
-        } catch (e: any) {
-            setErr(e?.message || "Failed to save settings");
+        } catch (e: unknown) {
+            const message =
+                e instanceof Error ? e.message : "Failed to save settings";
+            setErr(message);
         } finally {
             setSaving(false);
         }

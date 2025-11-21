@@ -1,7 +1,7 @@
 // src/app/profile/page.tsx
 "use client";
 
-import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ProfileTabs, { type ProfileTabKey } from "@/components/ProfileTabs";
 import ProfileSettings from "@/components/ProfileSettings";
@@ -33,6 +33,12 @@ type Profile = {
   currentTitle?: string | null;
 
   resume?: string | null;
+
+  notifications?: {
+    weeklyEmail?: boolean;
+    product?: boolean;
+    applicationUpdates?: boolean;
+  } | null;
 };
 
 type Application = {
@@ -44,6 +50,8 @@ type Application = {
   url?: string;
   firstResponseAt?: string; // ISO (optional)
 };
+
+const PROFILE_TABS: ProfileTabKey[] = ["profile", "applications", "settings"];
 
 /* =========================
    Helpers
@@ -93,7 +101,6 @@ function Skeleton() {
    ========================= */
 function ProfileContent() {
   const [form, setForm] = useState<Profile | null>(null);
-  const [initial, setInitial] = useState<Profile | null>(null);
   const [apps, setApps] = useState<Application[] | null>(null);
   const [loading, setLoading] = useState(true);
   const [, setError] = useState<string | null>(null);
@@ -109,7 +116,8 @@ function ProfileContent() {
 
   useEffect(() => {
     const cur = sp.get("tab");
-    setTab((["profile", "applications", "settings"] as const).includes(cur as any) ? (cur as ProfileTabKey) : "profile");
+    const next = PROFILE_TABS.includes(cur as ProfileTabKey) ? (cur as ProfileTabKey) : "profile";
+    setTab(next);
   }, [sp]);
 
   const setTabInUrl = useCallback((t: ProfileTabKey) => {
@@ -137,7 +145,6 @@ function ProfileContent() {
         if (!active) return;
 
         setForm(p);
-        setInitial(p);
         setApps(a);
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Failed to load");
@@ -220,17 +227,14 @@ function ProfileContent() {
             {tab === "settings" && (
               <ProfileSettings
                 initial={{
-                  openToWork: (form as any).openToWork ?? true,
-                  visibility: (form as any).visibility ?? "everyone",
-                  notifications: (form as any).notifications ?? {},
+                  notifications: form.notifications ?? {},
                 }}
                 onSaved={(saved) => {
-                  // keep page state in sync so Save/Cancel buttons on the right still work if you use them
-                  setForm((prev) => prev ? { ...prev, ...saved } as any : prev);
-                  setInitial((prev) => prev ? { ...prev, ...saved } as any : prev);
+                  setForm((prev) => (prev ? { ...prev, ...saved } : prev));
                 }}
               />
             )}
+
           </div>
 
           {/* RIGHT: side column */}
@@ -274,9 +278,8 @@ function ProfileContent() {
                     onChange={async (e) => {
                       const file = e.target.files?.[0];
                       if (!file) return;
-                      // You can later replace this with an API upload
                       const fakeUrl = URL.createObjectURL(file);
-                      update("resume" as keyof Profile, fakeUrl as any);
+                      update("resume", fakeUrl);
                     }}
                   />
                 </label>
@@ -311,27 +314,6 @@ export default function ProfilePage() {
 }
 
 // Small UI bits
-function Select<T extends string>({
-  label, value, options, onChange,
-}: {
-  label: string; value: T | ""; options: { value: T | ""; label: string }[]; onChange: (v: T | "") => void;
-}) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-200">{label}</span>
-      <select
-        value={value ?? ""}
-        onChange={(e) => onChange(e.target.value as T | "")}
-        className="w-full rounded-lg border px-3 py-2 outline-none ring-1 ring-transparent focus:ring-2 focus:ring-gray-900/20 dark:border-gray-800 dark:bg-gray-950 dark:text-gray-100"
-      >
-        {options.map((o) => (
-          <option key={`${o.label}-${o.value}`} value={o.value}>{o.label}</option>
-        ))}
-      </select>
-    </label>
-  );
-}
-
 function StatCard({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-xl border p-4 text-center dark:border-gray-800">

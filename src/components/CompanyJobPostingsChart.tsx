@@ -82,7 +82,7 @@ export default function CompanyJobPostingsChart({
                             tickMargin={6}
                         />
                         <Tooltip
-                            formatter={(value: any) => [value, "jobs"]}
+                            formatter={(value) => [value, "jobs"]}
                             labelFormatter={(label) => `Starting ${label}`}
                         />
                         <Legend />

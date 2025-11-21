@@ -72,7 +72,7 @@ export default function CompanyJobCategoryPieChart({
                         ))}
                     </Pie>
                     <Tooltip
-                        formatter={(value: number, _name, _payload) =>
+                        formatter={(value: number) =>
                             `${value.toLocaleString()} jobs`
                         }
                     />

@@ -7,6 +7,13 @@ type Suggestion = {
     id: string;
     place_name: string;
 };
+type GeoFeature = {
+    id: string;
+    place_name: string;
+};
+type PlacesResponse = {
+    features?: GeoFeature[];
+};
 
 export default function StepLocation() {
     const { data, setData, back, next } = useOnboarding();
@@ -31,11 +38,13 @@ export default function StepLocation() {
             }
             const r = await fetch(`/api/geo/places?q=${encodeURIComponent(debouncedQuery)}`);
             if (!r.ok) return;
-            const j = await r.json();
+
+            const j = (await r.json()) as PlacesResponse;
             if (stop) return;
-            const feats = (j?.features ?? []) as any[];
+
+            const feats = j.features ?? [];
             setSuggestions(
-                feats.map((f) => ({ id: f.id as string, place_name: f.place_name as string }))
+                feats.map((f) => ({ id: f.id, place_name: f.place_name }))
             );
             setOpen(true);
             setIdx(-1);
