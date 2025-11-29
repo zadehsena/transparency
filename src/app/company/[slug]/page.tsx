@@ -163,9 +163,16 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         {activeTab === "jobs" && (
           <CompanyJobs
             slug={company.slug}
-            initialJobs={company.jobs.map(({ url, ...rest }) => ({
-              ...rest,
-              url: url ?? "",
+            initialJobs={company.jobs.map((j) => ({
+              id: j.id,
+              title: j.title,
+              location: j.location,
+              postedAt: j.postedAt,                      // already a string in CompanyView
+              url: j.url ?? "",
+              unit: j.unit ?? null,
+              category: j.category ?? null,              // JobCategory | null -> string | null
+              region: j.region ?? null,                  // Region | null -> string | null
+              descriptionHtml: j.descriptionHtml ?? null // 👈 full HTML from Greenhouse
             }))}
             buStats={company.businessUnits}
             overall={{
@@ -182,7 +189,6 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             }}
           />
         )}
-
         {activeTab === "metrics" && (
           <CompanyMetrics
             kpis={company.kpis}

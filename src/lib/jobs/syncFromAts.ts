@@ -16,8 +16,11 @@ export async function syncJobs(onlySlug?: string) {
     }> = [];
 
     for (const cfg of configs) {
+        console.log(`\n🔄 Starting sync for ${cfg.slug} (${cfg.provider})`);
+
         const company = await prisma.company.findUnique({ where: { slug: cfg.slug } });
         if (!company) {
+            console.warn(`  ❌ Company not found: ${cfg.slug}`);
             results.push({
                 slug: cfg.slug,
                 provider: cfg.provider,
@@ -53,11 +56,15 @@ export async function syncJobs(onlySlug?: string) {
             postedAt?: string | Date;
             unit?: string | null;
             category?: JobCategory | undefined;
+            descriptionHtml?: string | null;
         }> = [];
 
         try {
+            console.log(`  ⏳ Fetching jobs from Greenhouse for ${cfg.slug}…`);
             rows = await fetchGreenhouse(cfg.token);
+            console.log(`  📝 Retrieved ${rows.length} jobs for ${cfg.slug}`);
         } catch (err) {
+            console.error(`  ❌ Fetch failed for ${cfg.slug}:`, err);
             results.push({
                 slug: cfg.slug,
                 provider: cfg.provider,
@@ -70,8 +77,17 @@ export async function syncJobs(onlySlug?: string) {
 
         const seen = new Set<string>();
         let upserted = 0;
+        let processed = 0;
 
         for (const r of rows) {
+            processed++;
+            // periodic progress log
+            if (processed % 25 === 0 || processed === rows.length) {
+                console.log(
+                    `  → Upsert progress for ${cfg.slug}: ${processed}/${rows.length}`
+                );
+            }
+
             if (!r?.externalId || !r?.title) continue;
             seen.add(r.externalId);
 
@@ -100,6 +116,7 @@ export async function syncJobs(onlySlug?: string) {
                     businessUnitId: bu?.id ?? generalBu.id,
                     closed: false,
                     category,
+                    descriptionHtml: r.descriptionHtml ?? null,
                 },
                 create: {
                     title: r.title,
@@ -114,11 +131,14 @@ export async function syncJobs(onlySlug?: string) {
                     businessUnitId: bu?.id ?? generalBu.id,
                     closed: false,
                     category,
+                    descriptionHtml: r.descriptionHtml ?? null,
                 },
             });
 
             upserted++;
         }
+
+        console.log(`  ✅ Upserted ${upserted} jobs for ${cfg.slug}`);
 
         const toClose = await prisma.job
             .findMany({
@@ -129,6 +149,7 @@ export async function syncJobs(onlySlug?: string) {
 
         let closed = 0;
         if (toClose.length > 0) {
+            console.log(`  ⚠️ Closing ${toClose.length} stale jobs for ${cfg.slug}…`);
             await prisma.job.updateMany({
                 where: { id: { in: toClose.map((j) => j.id) } },
                 data: {
@@ -137,9 +158,13 @@ export async function syncJobs(onlySlug?: string) {
                 },
             });
             closed = toClose.length;
+            console.log(`  ✅ Closed ${closed} jobs for ${cfg.slug}`);
+        } else {
+            console.log(`  ✅ No stale jobs to close for ${cfg.slug}`);
         }
 
         results.push({ slug: cfg.slug, provider: cfg.provider, upserted, closed });
+        console.log(`✔️ Finished sync for ${cfg.slug}`);
     }
 
     return { ok: true, results };

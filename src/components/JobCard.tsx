@@ -26,10 +26,16 @@ export default function JobCard({
     job,
     stats,
     isAuthed = true,
+    descriptionHtml,
+    isExpanded = false,
+    onToggleDescription,
 }: {
     job: JobCardJob;
     stats?: JobCardStats;
     isAuthed?: boolean;
+    descriptionHtml?: string | null;
+    isExpanded?: boolean;
+    onToggleDescription?: () => void;
 }) {
     const postedPretty = new Date(job.postedAt).toLocaleDateString(undefined, {
         year: "numeric",
@@ -135,6 +141,35 @@ export default function JobCard({
                     </div>
                 )}
             </div>
+
+            {/* Expandable full description */}
+            {descriptionHtml && (
+                <div className="mt-4">
+                    {onToggleDescription && (
+                        <button
+                            type="button"
+                            onClick={(e) => {
+                                // Don't trigger the card's click (which opens the job URL)
+                                e.stopPropagation();
+                                e.preventDefault();
+                                onToggleDescription();
+                            }}
+                            className="rounded-full border border-gray-200 px-3 py-1 text-xs font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
+                        >
+                            {isExpanded ? "Hide details" : "View details"}
+                        </button>
+                    )}
+
+                    {isExpanded && (
+                        <div className="mt-3 border-t border-gray-100 pt-3 text-sm leading-relaxed text-gray-800 dark:border-gray-800 dark:text-gray-100">
+                            <div
+                                className="prose prose-sm max-w-none prose-headings:mb-1 prose-headings:mt-3 dark:prose-invert"
+                                dangerouslySetInnerHTML={{ __html: descriptionHtml }}
+                            />
+                        </div>
+                    )}
+                </div>
+            )}
 
             <span className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition group-hover:ring-black/5 dark:group-hover:ring-white/10" />
         </li>

@@ -123,6 +123,7 @@ model Job {
   applications   Application[]
   category       JobCategory?
   region         Region?
+  descriptionHtml String? @db.Text
 
   @@unique([ats, externalId])
   @@index([companyId, postedAt])

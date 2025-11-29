@@ -13,6 +13,7 @@ export type Job = {
   unit?: string | null;
   category?: string | null;
   region?: string | null;
+  descriptionHtml?: string | null;
 };
 
 export type CompanyJobsProps = {
@@ -63,6 +64,8 @@ export default function CompanyJobs({
 
   const { status } = useSession();
   const isAuthed = status === "authenticated";
+
+  const [expandedId, setExpandedId] = useState<string | null>(null);
 
   // ✅ filter state
   const [category, setCategory] = useState(initialFilters?.category ?? "");
@@ -288,12 +291,19 @@ export default function CompanyJobs({
                 companyName,
               };
 
+              const isExpanded = expandedId === job.id;
+
               return (
                 <JobCard
                   key={job.id}
                   job={cardJob}
                   stats={getJobStats(job)}
                   isAuthed={isAuthed}
+                  descriptionHtml={job.descriptionHtml ?? null}
+                  isExpanded={expandedId === job.id}
+                  onToggleDescription={() =>
+                    setExpandedId(expandedId === job.id ? null : job.id)
+                  }
                 />
               );
             })}

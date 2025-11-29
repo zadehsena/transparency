@@ -33,6 +33,7 @@ export type CompanyView = {
     unit?: string;
     category?: JobCategory | null;
     region?: Region | null;
+    descriptionHtml?: string | null;
   }[];
   jobCategories: {
     name: string;  // e.g. "Software"
@@ -134,6 +135,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     unit: j.businessUnit?.name,
     category: j.category, // JobCategory | null
     region: j.region,
+    descriptionHtml: j.descriptionHtml,
   }));
 
   const categoryCounts = new Map<JobCategory, number>();

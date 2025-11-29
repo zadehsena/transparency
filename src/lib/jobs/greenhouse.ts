@@ -12,6 +12,7 @@ export type RawGreenhouseJob = {
   location?: { name?: string };
   departments?: { id: number; name: string }[];
   metadata?: { name: string; value: string }[];
+  content?: string;
 };
 
 function pickUnit(j: RawGreenhouseJob): string | undefined {
@@ -23,8 +24,8 @@ function pickUnit(j: RawGreenhouseJob): string | undefined {
 }
 
 export async function fetchGreenhouse(boardToken: string) {
-  // 👇 Single call. No content=true (huge), no pagination params.
-  const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs`;
+  // Now we ask for full HTML content so we can show an "expand" view.
+  const url = `https://boards-api.greenhouse.io/v1/boards/${boardToken}/jobs?content=true`;
 
   const res = await fetchWithTimeout(url, { timeoutMs: 15000 });
   if (!res.ok) throw new Error(`Greenhouse fetch failed: ${res.status}`);
@@ -42,7 +43,9 @@ export async function fetchGreenhouse(boardToken: string) {
       url: j.absolute_url,
       postedAt: j.updated_at || j.created_at || new Date().toISOString(),
       unit: pickUnit(j),
-      category, // 👈 new field
+      category,
+      // 👇 NEW: pass this through so syncFromAts can store it in Job.descriptionHtml
+      descriptionHtml: j.content ?? null,
     };
   });
 }

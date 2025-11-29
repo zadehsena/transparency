@@ -9,7 +9,12 @@ export async function POST(req: Request) {
     const url = new URL(req.url);
     const slug = (url.searchParams.get("slug") || "").trim() || undefined;
 
+    console.log(`\n📥 /api/sync-jobs POST received. slug=${slug ?? "(all)"}`);
+
     const { results } = await syncJobs(slug);
+
+    console.log(`📤 /api/sync-jobs completed. Summary:`, results);
+
     return NextResponse.json({ ok: true, results });
   } catch (e: unknown) {
     console.error("sync-jobs failed:", e);
