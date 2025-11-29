@@ -208,9 +208,9 @@ export default function CompanyJobs({
   }
 
   return (
-    <div className="flex flex-col gap-4 lg:gap-6">
+    <div className="flex flex-col gap-2 lg:gap-3">
       {/* Filter bar */}
-      <div className="mb-2 flex flex-wrap items-center gap-3 rounded-2xl border bg-gray-50 p-3 text-sm dark:border-gray-800 dark:bg-gray-900">
+      <div className="flex flex-wrap items-center gap-3 rounded-2xl border bg-gray-50 p-3 text-sm dark:border-gray-800 dark:bg-gray-900">
         {/* Category */}
         <select
           value={category}

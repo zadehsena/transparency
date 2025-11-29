@@ -116,36 +116,7 @@ export default function JobCard({
                                 }`}
                             aria-hidden={!isAuthed}
                         >
-                            <div className="flex items-center gap-3">
-                                <span title="Response rate">
-                                    RR: {stats.initialRate !== null ? `${stats.initialRate}%` : "—"}
-                                </span>
-                                <span className="opacity-40">•</span>
-                                <span title="Median reply time">
-                                    Median: {stats.medianDays !== null ? `${stats.medianDays}d` : "—"}
-                                </span>
-                                <span className="opacity-40">•</span>
-                                <span title="Interview rate">
-                                    IR: {stats.interviewRate !== null ? `${stats.interviewRate}%` : "—"}
-                                </span>
-                                <span className="opacity-40">•</span>
-                                <span title="Offer rate">
-                                    OR: {stats.offerRate !== null ? `${stats.offerRate}%` : "—"}
-                                </span>
-                            </div>
                         </div>
-
-                        <button
-                            type="button"
-                            onClick={(e) => {
-                                e.preventDefault();
-                                e.stopPropagation();
-                                openAuthModal("login");
-                            }}
-                            className="pointer-events-auto rounded-md bg-black/70 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-sm underline decoration-white/60 underline-offset-2 hover:decoration-white"
-                        >
-                            Sign in to unlock
-                        </button>
                     </div>
                 )}
             </div>

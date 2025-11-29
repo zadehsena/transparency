@@ -269,7 +269,7 @@ export default async function HomePage() {
         <div className="relative mx-auto w-full max-w-lg">
           <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
             <Image
-              src="/images/void.png"
+              src="/images/image2.png"
               alt="Application drifting toward the void"
               fill
               priority
