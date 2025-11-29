@@ -82,7 +82,9 @@ export default function JobCard({
                     >
                         {job.title}
                     </h2>
-                    <p className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+
+                    {/* ⬇️ CHANGE THIS FROM <p> TO <div> */}
+                    <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                         {job.companyName && (
                             <Link
                                 href={`/company/${job.companyName.toLowerCase().replace(/\s+/g, "-")}`}
@@ -105,7 +107,8 @@ export default function JobCard({
                         <span className="text-xs text-gray-500 dark:text-gray-400">
                             Posted {postedPretty}
                         </span>
-                    </p>
+                    </div>
+                    {/* ⬆️ closing div */}
                 </div>
 
                 {/* RIGHT: compact transparency stats */}

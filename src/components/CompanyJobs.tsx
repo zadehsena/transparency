@@ -21,7 +21,7 @@ export type CompanyJobsProps = {
   slug: string;
   initialJobs: Job[];
   buStats: BUStat[];
-  overall: OverallKPIs;
+  overall?: OverallKPIs;
   companyName: string;
   pageSize?: number;
   initialFilters?: {
@@ -30,6 +30,8 @@ export type CompanyJobsProps = {
     unit?: string;
     q?: string;
   };
+  showStats?: boolean;
+  disableLoadMore?: boolean;
 };
 
 type BUStat = {
@@ -55,6 +57,8 @@ export default function CompanyJobs({
   companyName,
   pageSize = 25,
   initialFilters,
+  showStats = true,
+  disableLoadMore = false,
 }: CompanyJobsProps) {
   const [jobs, setJobs] = useState<Job[]>(initialJobs || []);
   const [page, setPage] = useState(1);
@@ -85,27 +89,36 @@ export default function CompanyJobs({
   }, [buStats]);
 
   function getJobStats(job: Job): JobCardStats {
+    // For pages where we don't care about stats (like generic /jobs)
+    if (!showStats) return null;
+
     const bu = job.unit ? buMap.get(job.unit.toLowerCase()) : undefined;
 
-    const initialRate = (() => {
-      if (bu && bu.applications > 0) {
-        return Math.round((bu.responses / bu.applications) * 100);
-      }
-      return Math.round(overall.overallResponseRate);
-    })();
+    let initialRate: number | null = null;
+    let interviewRate: number | null = null;
+    let offerRate: number | null = null;
+    let medianDays: number | null = null;
 
-    const interviewRate =
-      bu && bu.applications > 0
-        ? Math.round((bu.interviews / bu.applications) * 100)
-        : null;
+    if (bu && bu.applications > 0) {
+      initialRate = Math.round((bu.responses / bu.applications) * 100);
+      interviewRate = Math.round((bu.interviews / bu.applications) * 100);
+      offerRate = Math.round((bu.offers / bu.applications) * 100);
+      medianDays = bu.medianResponseDays ?? null;
+    } else if (overall) {
+      // Fallback to overall KPIs if provided
+      initialRate = Math.round(overall.overallResponseRate);
+      medianDays = overall.medianResponseDays ?? null;
+    }
 
-    const offerRate =
-      bu && bu.applications > 0
-        ? Math.round((bu.offers / bu.applications) * 100)
-        : null;
-
-    const medianDays =
-      (bu?.medianResponseDays ?? overall.medianResponseDays) ?? null;
+    // If we truly have nothing, just hide the stats block
+    if (
+      initialRate === null &&
+      interviewRate === null &&
+      offerRate === null &&
+      medianDays === null
+    ) {
+      return null;
+    }
 
     return { initialRate, interviewRate, offerRate, medianDays };
   }
@@ -331,23 +344,26 @@ export default function CompanyJobs({
             </ul>
 
             {/* pagination */}
-            <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-              <div>Showing {filteredJobs.length}</div>
-              <div className="flex items-center gap-2">
-                {error && <span className="text-red-600">{error}</span>}
-                {hasNext ? (
-                  <button
-                    onClick={loadMore}
-                    disabled={loading}
-                    className="rounded-xl bg-black px-3 py-2 text-white disabled:opacity-60"
-                  >
-                    {loading ? "Loading…" : "Load more"}
-                  </button>
-                ) : (
-                  <span>End</span>
-                )}
+            {!disableLoadMore && (
+              <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+                <div>Showing {filteredJobs.length}</div>
+                <div className="flex items-center gap-2">
+                  {error && <span className="text-red-600">{error}</span>}
+                  {hasNext ? (
+                    <button
+                      onClick={loadMore}
+                      disabled={loading}
+                      className="rounded-xl bg-black px-3 py-2 text-white disabled:opacity-60"
+                    >
+                      {loading ? "Loading…" : "Load more"}
+                    </button>
+                  ) : (
+                    <span>End</span>
+                  )}
+                </div>
               </div>
-            </div>
+            )}
+
           </div>
 
           {/* RIGHT: full description (desktop only) */}
