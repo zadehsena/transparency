@@ -29,6 +29,8 @@ export default function JobCard({
     descriptionHtml,
     isExpanded = false,
     onToggleDescription,
+    onSelect,
+    showInlineDescription = true,
 }: {
     job: JobCardJob;
     stats?: JobCardStats;
@@ -36,6 +38,8 @@ export default function JobCard({
     descriptionHtml?: string | null;
     isExpanded?: boolean;
     onToggleDescription?: () => void;
+    onSelect?: () => void;             // NEW
+    showInlineDescription?: boolean;   // NEW
 }) {
     const postedPretty = new Date(job.postedAt).toLocaleDateString(undefined, {
         year: "numeric",
@@ -43,42 +47,47 @@ export default function JobCard({
         day: "numeric",
     });
 
+    const handleClick = () => {
+        if (onSelect) {
+            onSelect();
+            return;
+        }
+        if (!job.url) return;
+        window.open(job.url, "_blank", "noopener,noreferrer");
+    };
+
+    const handleKeyDown: React.KeyboardEventHandler<HTMLLIElement> = (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            handleClick();
+        }
+    };
+
     return (
         <li
-            className="group relative rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md cursor-pointer dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80"
-            role={job.url ? "link" : undefined}
-            tabIndex={job.url ? 0 : -1}
-            onClick={() => {
-                if (!job.url) return;
-                window.open(job.url, "_blank", "noopener,noreferrer");
-            }}
-            onKeyDown={(e) => {
-                if (!job.url) return;
-                if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    window.open(job.url, "_blank", "noopener,noreferrer");
-                }
-            }}
+            className="group relative cursor-pointer rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80"
+            role={job.url || onSelect ? "button" : undefined}
+            tabIndex={job.url || onSelect ? 0 : -1}
+            onClick={handleClick}
+            onKeyDown={handleKeyDown}
         >
-
             {/* Top row: title/company/meta, right = stats */}
-            <div className="flex items-start justify-between gap-4 relative">
+            <div className="relative flex items-start justify-between gap-4">
                 {/* LEFT */}
                 <div className="min-w-0">
-                    <h2 className="truncate text-lg font-bold text-gray-900 dark:text-gray-100
-               transition-colors group-hover:text-blue-600 dark:group-hover:text-blue-400
-               group-hover:underline underline-offset-2 mb-1.5">
+                    <h2
+                        className="mb-1.5 truncate text-lg font-bold text-gray-900 transition-colors
+                       group-hover:text-blue-600 group-hover:underline underline-offset-2
+                       dark:text-gray-100 dark:group-hover:text-blue-400"
+                    >
                         {job.title}
                     </h2>
-                    <p className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400
-               overflow-hidden text-ellipsis whitespace-nowrap">
+                    <p className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                         {job.companyName && (
                             <Link
                                 href={`/company/${job.companyName.toLowerCase().replace(/\s+/g, "-")}`}
-                                className="flex items-center gap-2 font-medium text-gray-600 dark:text-gray-400
-               hover:underline hover:text-blue-600 dark:hover:text-blue-400
-               pointer-events-auto"
-                                onClick={(e) => e.stopPropagation()} // prevent triggering the job link overlay
+                                className="pointer-events-auto flex items-center gap-2 font-medium text-gray-600 hover:text-blue-600 hover:underline dark:text-gray-400 dark:hover:text-blue-400"
+                                onClick={(e) => e.stopPropagation()}
                             >
                                 <CompanyLogo
                                     slug={job.companyName.toLowerCase().replace(/\s+/g, "-")}
@@ -103,7 +112,7 @@ export default function JobCard({
                 {stats && (
                     <div className="relative z-10 shrink-0 self-start">
                         <div
-                            className={`text-xs text-gray-600 dark:text-gray-300 transition ${isAuthed ? "" : "blur-[3px] select-none pointer-events-none"
+                            className={`text-xs text-gray-600 transition dark:text-gray-300 ${isAuthed ? "" : "pointer-events-none select-none blur-[3px]"
                                 }`}
                             aria-hidden={!isAuthed}
                         >
@@ -113,8 +122,7 @@ export default function JobCard({
                                 </span>
                                 <span className="opacity-40">•</span>
                                 <span title="Median reply time">
-                                    Median:{" "}
-                                    {stats.medianDays !== null ? `${stats.medianDays}d` : "—"}
+                                    Median: {stats.medianDays !== null ? `${stats.medianDays}d` : "—"}
                                 </span>
                                 <span className="opacity-40">•</span>
                                 <span title="Interview rate">
@@ -130,9 +138,9 @@ export default function JobCard({
                         <button
                             type="button"
                             onClick={(e) => {
-                                e.preventDefault();     // don't follow the card's absolute link
-                                e.stopPropagation();    // don't bubble to the card
-                                openAuthModal("login"); // or "signup" if you prefer
+                                e.preventDefault();
+                                e.stopPropagation();
+                                openAuthModal("login");
                             }}
                             className="pointer-events-auto rounded-md bg-black/70 px-2 py-1 text-[11px] font-medium text-white shadow-sm backdrop-blur-sm underline decoration-white/60 underline-offset-2 hover:decoration-white"
                         >
@@ -142,14 +150,13 @@ export default function JobCard({
                 )}
             </div>
 
-            {/* Expandable full description */}
-            {descriptionHtml && (
+            {/* Expandable full description (optional, for non-split layouts) */}
+            {descriptionHtml && showInlineDescription && (
                 <div className="mt-4">
                     {onToggleDescription && (
                         <button
                             type="button"
                             onClick={(e) => {
-                                // Don't trigger the card's click (which opens the job URL)
                                 e.stopPropagation();
                                 e.preventDefault();
                                 onToggleDescription();

@@ -1,8 +1,9 @@
-'use client';
+// src/components/CompanyJobs.tsx
+"use client";
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
-import JobCard, { type JobCardJob } from "./JobCard";
+import JobCard, { type JobCardJob, type JobCardStats } from "./JobCard";
 
 export type Job = {
   id: string;
@@ -41,7 +42,7 @@ type BUStat = {
 };
 
 type OverallKPIs = {
-  overallResponseRate: number;         // %
+  overallResponseRate: number; // %
   totalApplications: number;
   medianResponseDays: number | null;
 };
@@ -65,25 +66,26 @@ export default function CompanyJobs({
   const { status } = useSession();
   const isAuthed = status === "authenticated";
 
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+  // split-view selection
+  const [selectedId, setSelectedId] = useState<string | null>(
+    initialJobs[0]?.id ?? null
+  );
 
-  // ✅ filter state
+  // filters
   const [category, setCategory] = useState(initialFilters?.category ?? "");
   const [region, setRegion] = useState(initialFilters?.region ?? "");
   const [unit, setUnit] = useState(initialFilters?.unit ?? "");
   const [q, setQ] = useState(initialFilters?.q ?? "");
 
-  // Fast lookup for BU by name
+  // BU lookup
   const buMap = useMemo(() => {
     const m = new Map<string, BUStat>();
-    (buStats || []).forEach(b => m.set((b.name || '').toLowerCase(), b));
+    (buStats || []).forEach((b) => m.set((b.name || "").toLowerCase(), b));
     return m;
   }, [buStats]);
 
-  function getJobStats(job: Job) {
-    const bu = job.unit
-      ? buMap.get(job.unit.toLowerCase())
-      : undefined;
+  function getJobStats(job: Job): JobCardStats {
+    const bu = job.unit ? buMap.get(job.unit.toLowerCase()) : undefined;
 
     const initialRate = (() => {
       if (bu && bu.applications > 0) {
@@ -92,13 +94,15 @@ export default function CompanyJobs({
       return Math.round(overall.overallResponseRate);
     })();
 
-    const interviewRate = bu && bu.applications > 0
-      ? Math.round((bu.interviews / bu.applications) * 100)
-      : null;
+    const interviewRate =
+      bu && bu.applications > 0
+        ? Math.round((bu.interviews / bu.applications) * 100)
+        : null;
 
-    const offerRate = bu && bu.applications > 0
-      ? Math.round((bu.offers / bu.applications) * 100)
-      : null;
+    const offerRate =
+      bu && bu.applications > 0
+        ? Math.round((bu.offers / bu.applications) * 100)
+        : null;
 
     const medianDays =
       (bu?.medianResponseDays ?? overall.medianResponseDays) ?? null;
@@ -106,35 +110,49 @@ export default function CompanyJobs({
     return { initialRate, interviewRate, offerRate, medianDays };
   }
 
-  // ✅ filtered jobs (client-side)
+  // client-side filtering
   const filteredJobs = useMemo(() => {
     let result = [...jobs];
 
     if (category) {
-      result = result.filter(j => (j.category || "") === category);
+      result = result.filter((j) => (j.category || "") === category);
     }
-
     if (region) {
-      result = result.filter(j => (j.region || "") === region);
+      result = result.filter((j) => (j.region || "") === region);
     }
-
     if (unit) {
       const u = unit.toLowerCase();
-      result = result.filter(j => (j.unit || "").toLowerCase() === u);
+      result = result.filter((j) => (j.unit || "").toLowerCase() === u);
     }
-
     if (q) {
       const qq = q.toLowerCase();
-      result = result.filter(j =>
-        j.title.toLowerCase().includes(qq) ||
-        (j.location || "").toLowerCase().includes(qq)
+      result = result.filter(
+        (j) =>
+          j.title.toLowerCase().includes(qq) ||
+          (j.location || "").toLowerCase().includes(qq)
       );
     }
 
     return result;
   }, [jobs, category, region, unit, q]);
 
-  // Reset when slug / initial changes
+  // keep selection in sync with filtered list
+  useEffect(() => {
+    if (!filteredJobs.length) {
+      setSelectedId(null);
+      return;
+    }
+    if (!selectedId || !filteredJobs.some((j) => j.id === selectedId)) {
+      setSelectedId(filteredJobs[0].id);
+    }
+  }, [filteredJobs, selectedId]);
+
+  const selectedJob = useMemo(
+    () => filteredJobs.find((j) => j.id === selectedId) ?? null,
+    [filteredJobs, selectedId]
+  );
+
+  // Reset when company / initial jobs change
   useEffect(() => {
     setJobs(initialJobs || []);
     setPage(1);
@@ -142,6 +160,7 @@ export default function CompanyJobs({
     setError(null);
     inflight.current?.abort();
     inflight.current = null;
+    setSelectedId(initialJobs[0]?.id ?? null);
   }, [slug, initialJobs]);
 
   async function loadMore() {
@@ -151,22 +170,26 @@ export default function CompanyJobs({
 
     const ac = new AbortController();
     inflight.current = ac;
-    const timeout = setTimeout(() => ac.abort('timeout'), 15000);
+    const timeout = setTimeout(() => ac.abort("timeout"), 15000);
 
     try {
       const nextPage = page + 1;
       const res = await fetch(
-        `/api/company/${encodeURIComponent(slug)}/jobs?page=${nextPage}&pageSize=${pageSize}`,
-        { cache: 'no-store', signal: ac.signal }
+        `/api/company/${encodeURIComponent(
+          slug
+        )}/jobs?page=${nextPage}&pageSize=${pageSize}`,
+        { cache: "no-store", signal: ac.signal }
       );
       if (!res.ok) {
-        const body = await res.text().catch(() => '');
-        throw new Error(`Fetch failed: ${res.status} ${res.statusText} ${body}`);
+        const body = await res.text().catch(() => "");
+        throw new Error(
+          `Fetch failed: ${res.status} ${res.statusText} ${body}`
+        );
       }
       const data = await res.json();
-      if (!data?.ok) throw new Error(data?.error || 'Unknown API error');
+      if (!data?.ok) throw new Error(data?.error || "Unknown API error");
 
-      setJobs(prev => [...prev, ...(data.jobs || [])]);
+      setJobs((prev) => [...prev, ...(data.jobs || [])]);
       setPage(nextPage);
       setHasNext(Boolean(data.hasNext));
     } catch (e: unknown) {
@@ -185,13 +208,13 @@ export default function CompanyJobs({
   }
 
   return (
-    <div>
-      {/* ✅ Filter bar ALWAYS visible */}
-      <div className="mb-4 flex flex-wrap items-center gap-3 rounded-2xl border bg-gray-50 p-3 text-sm dark:border-gray-800 dark:bg-gray-900">
+    <div className="flex flex-col gap-4 lg:gap-6">
+      {/* Filter bar */}
+      <div className="mb-2 flex flex-wrap items-center gap-3 rounded-2xl border bg-gray-50 p-3 text-sm dark:border-gray-800 dark:bg-gray-900">
         {/* Category */}
         <select
           value={category}
-          onChange={e => setCategory(e.target.value)}
+          onChange={(e) => setCategory(e.target.value)}
           className="rounded-xl border bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
         >
           <option value="">All categories</option>
@@ -215,7 +238,7 @@ export default function CompanyJobs({
         {/* Region */}
         <select
           value={region}
-          onChange={e => setRegion(e.target.value)}
+          onChange={(e) => setRegion(e.target.value)}
           className="rounded-xl border bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
         >
           <option value="">All regions</option>
@@ -233,7 +256,7 @@ export default function CompanyJobs({
           type="text"
           placeholder="Filter by team / unit"
           value={unit}
-          onChange={e => setUnit(e.target.value)}
+          onChange={(e) => setUnit(e.target.value)}
           className="min-w-[160px] flex-1 rounded-xl border bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
         />
 
@@ -242,7 +265,7 @@ export default function CompanyJobs({
           type="text"
           placeholder="Search title or location"
           value={q}
-          onChange={e => setQ(e.target.value)}
+          onChange={(e) => setQ(e.target.value)}
           className="min-w-[180px] flex-1 rounded-xl border bg-white px-3 py-2 text-xs dark:border-gray-700 dark:bg-gray-800"
         />
 
@@ -261,9 +284,8 @@ export default function CompanyJobs({
         </button>
       </div>
 
-      {/* ✅ Results OR empty state, but filter bar stays */}
       {filteredJobs.length === 0 ? (
-        <div className="rounded-lg border bg-white p-6 text-sm text-gray-600">
+        <div className="rounded-lg border bg-white p-6 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
           No active listings match your filters.
           <button
             type="button"
@@ -279,56 +301,104 @@ export default function CompanyJobs({
           </button>
         </div>
       ) : (
-        <>
-          <ul className="space-y-3">
-            {filteredJobs.map((job) => {
-              const cardJob: JobCardJob = {
-                id: job.id,
-                title: job.title,
-                location: job.location ?? "—",
-                postedAt: job.postedAt,
-                url: job.url ?? undefined,
-                companyName,
-              };
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,3fr)] lg:items-start">
+          {/* LEFT: list */}
+          <div className="rounded-2xl border bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-950 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto">
+            <ul className="space-y-3">
+              {filteredJobs.map((job) => {
+                const cardJob: JobCardJob = {
+                  id: job.id,
+                  title: job.title,
+                  location: job.location ?? "—",
+                  postedAt: job.postedAt,
+                  url: job.url ?? undefined,
+                  companyName,
+                };
 
-              const isExpanded = expandedId === job.id;
+                return (
+                  <JobCard
+                    key={job.id}
+                    job={cardJob}
+                    stats={getJobStats(job)}
+                    isAuthed={isAuthed}
+                    descriptionHtml={job.descriptionHtml ?? null}
+                    // split-view behavior:
+                    onSelect={() => setSelectedId(job.id)}
+                    showInlineDescription={false}
+                  />
+                );
+              })}
+            </ul>
 
-              return (
-                <JobCard
-                  key={job.id}
-                  job={cardJob}
-                  stats={getJobStats(job)}
-                  isAuthed={isAuthed}
-                  descriptionHtml={job.descriptionHtml ?? null}
-                  isExpanded={expandedId === job.id}
-                  onToggleDescription={() =>
-                    setExpandedId(expandedId === job.id ? null : job.id)
-                  }
-                />
-              );
-            })}
-          </ul>
-
-          <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-            <div>Showing {filteredJobs.length}</div>
-            <div className="flex items-center gap-2">
-              {error && <span className="text-red-600">{error}</span>}
-              {hasNext ? (
-                <button
-                  onClick={loadMore}
-                  disabled={loading}
-                  className="rounded-xl bg-black px-3 py-2 text-white disabled:opacity-60"
-                >
-                  {loading ? 'Loading…' : 'Load more'}
-                </button>
-              ) : (
-                <span>End</span>
-              )}
+            {/* pagination */}
+            <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
+              <div>Showing {filteredJobs.length}</div>
+              <div className="flex items-center gap-2">
+                {error && <span className="text-red-600">{error}</span>}
+                {hasNext ? (
+                  <button
+                    onClick={loadMore}
+                    disabled={loading}
+                    className="rounded-xl bg-black px-3 py-2 text-white disabled:opacity-60"
+                  >
+                    {loading ? "Loading…" : "Load more"}
+                  </button>
+                ) : (
+                  <span>End</span>
+                )}
+              </div>
             </div>
           </div>
-        </>
+
+          {/* RIGHT: full description (desktop only) */}
+          <aside className="hidden rounded-2xl border bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:block lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto">
+            {!selectedJob ? (
+              <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
+                Select a job on the left to see the full description.
+              </div>
+            ) : (
+              <>
+                <header className="mb-4">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                    {selectedJob.title}
+                  </h2>
+                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                    {companyName}
+                    {selectedJob.location ? ` • ${selectedJob.location}` : ""}
+                  </p>
+                </header>
+
+                <div className="prose prose-sm max-w-none text-gray-800 dark:prose-invert dark:text-gray-100">
+                  {selectedJob.descriptionHtml ? (
+                    <div
+                      dangerouslySetInnerHTML={{
+                        __html: selectedJob.descriptionHtml,
+                      }}
+                    />
+                  ) : (
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Full description not available for this listing.
+                    </p>
+                  )}
+                </div>
+
+                {selectedJob.url && (
+                  <div className="mt-6">
+                    <a
+                      href={selectedJob.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+                    >
+                      Apply on {companyName}
+                    </a>
+                  </div>
+                )}
+              </>
+            )}
+          </aside>
+        </div>
       )}
     </div>
   );
 }
-
