@@ -13,7 +13,8 @@ export type JobCardJob = {
     url?: string;
     unit?: string | null;
     companyName?: string | null;
-};
+    companySlug?: string | null;  // 👈 add this
+}
 
 export type JobCardStats = {
     initialRate: number | null;
@@ -86,18 +87,26 @@ export default function JobCard({
                     {/* ⬇️ CHANGE THIS FROM <p> TO <div> */}
                     <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                         {job.companyName && (
-                            <Link
-                                href={`/company/${job.companyName.toLowerCase().replace(/\s+/g, "-")}`}
-                                className="pointer-events-auto flex items-center gap-2 font-medium text-gray-600 hover:text-blue-600 hover:underline dark:text-gray-400 dark:hover:text-blue-400"
-                                onClick={(e) => e.stopPropagation()}
-                            >
-                                <CompanyLogo
-                                    slug={job.companyName.toLowerCase().replace(/\s+/g, "-")}
-                                    name={job.companyName}
-                                    size={14}
-                                />
-                                <span>{job.companyName}</span>
-                            </Link>
+                            (() => {
+                                const slug =
+                                    job.companySlug ??
+                                    job.companyName.toLowerCase().replace(/\s+/g, "-");
+
+                                return (
+                                    <Link
+                                        href={`/company/${slug}`}
+                                        className="pointer-events-auto flex items-center gap-2 font-medium text-gray-600 hover:text-blue-600 hover:underline dark:text-gray-400 dark:hover:text-blue-400"
+                                        onClick={(e) => e.stopPropagation()}
+                                    >
+                                        <CompanyLogo
+                                            slug={slug}
+                                            name={job.companyName}
+                                            size={14}
+                                        />
+                                        <span>{job.companyName}</span>
+                                    </Link>
+                                );
+                            })()
                         )}
 
                         {job.companyName && job.location && <span>—</span>}

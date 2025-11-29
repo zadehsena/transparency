@@ -15,7 +15,10 @@ export type Job = {
   category?: string | null;
   region?: string | null;
   descriptionHtml?: string | null;
+  companyName?: string | null;
+  companySlug?: string | null;
 };
+
 
 export type CompanyJobsProps = {
   slug: string;
@@ -325,8 +328,10 @@ export default function CompanyJobs({
                   location: job.location ?? "—",
                   postedAt: job.postedAt,
                   url: job.url ?? undefined,
-                  companyName,
+                  companyName: job.companyName ?? companyName,
+                  companySlug: job.companySlug ?? undefined,
                 };
+
 
                 return (
                   <JobCard
@@ -379,7 +384,7 @@ export default function CompanyJobs({
                     {selectedJob.title}
                   </h2>
                   <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {companyName}
+                    {selectedJob.companyName ?? companyName}
                     {selectedJob.location ? ` • ${selectedJob.location}` : ""}
                   </p>
                 </header>
@@ -406,7 +411,7 @@ export default function CompanyJobs({
                       rel="noopener noreferrer"
                       className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
                     >
-                      Apply on {companyName}
+                      Apply on {selectedJob.companyName ?? companyName}
                     </a>
                   </div>
                 )}

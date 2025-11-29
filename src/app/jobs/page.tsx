@@ -33,6 +33,13 @@ export default async function JobsIndex({
         category: true,
         region: true,
         descriptionHtml: true,
+        company: true,
+        companyRel: {
+          select: {
+            name: true,
+            slug: true,
+          },
+        },
       },
     }),
     prisma.job.count({
@@ -56,6 +63,7 @@ export default async function JobsIndex({
     category: j.category ?? undefined,
     region: j.region ?? undefined,
     descriptionHtml: j.descriptionHtml ?? undefined,
+    companyName: j.companyRel?.name ?? j.company ?? null,
   }));
 
   return (
@@ -71,12 +79,12 @@ export default async function JobsIndex({
 
       <CompanyJobs
         slug="all"
-        companyName="All companies"
+        companyName="Various companies"  // 👈 just a fallback label; per-job names come from job.companyName
         initialJobs={initialJobs}
-        buStats={[]}               // not used here
-        showStats={false}          // 👈 hide right-side stats
-        disableLoadMore={true}     // 👈 hide "Load more" (we paginate at the page level)
-        initialFilters={{}}        // start unfiltered
+        buStats={[]}
+        showStats={false}
+        disableLoadMore={true}
+        initialFilters={{}}
       />
 
       {/* Page-level pagination */}
