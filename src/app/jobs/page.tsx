@@ -64,6 +64,7 @@ export default async function JobsIndex({
     region: j.region ?? undefined,
     descriptionHtml: j.descriptionHtml ?? undefined,
     companyName: j.companyRel?.name ?? j.company ?? null,
+    companySlug: j.companyRel?.slug ?? null,
   }));
 
   return (

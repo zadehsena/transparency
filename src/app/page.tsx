@@ -240,7 +240,7 @@ export default async function HomePage() {
   return (
     <section className="mx-auto max-w-6xl px-6 py-16">
       {/* HERO */}
-      <div className="grid items-center gap-12 md:grid-cols-2">
+      <div className="grid items-center gap-4 md:gap-8 md:grid-cols-2">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl leading-snug sm:leading-tight">
             Job applications shouldn’t vanish into the void.
@@ -269,7 +269,7 @@ export default async function HomePage() {
         <div className="relative mx-auto w-full max-w-lg">
           <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
             <Image
-              src="/images/image2.png"
+              src="/images/image5.png"
               alt="Application drifting toward the void"
               fill
               priority

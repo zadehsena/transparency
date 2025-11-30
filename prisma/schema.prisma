@@ -39,23 +39,43 @@ model Company {
   id                  String         @id @default(cuid())
   slug                String         @unique
   name                String
+
+  // Transparency / stats
   medianResponseDays  Int?
-  updatedAt           DateTime       @updatedAt
-  employeesLow        Int?
-  employeesHigh       Int?
-  medianBaseSalaryUSD Int?
-  medianTCSalaryUSD   Int?
-  foundedYear         Int?
-  hqCity              String?
   overallResponseRate Int?
   totalApplications   Int?
+
+  // Size & basics
+  employeesLow        Int?
+  employeesHigh       Int?
+  foundedYear         Int?
   industry            String?
+  revenueUSD          Int?
+
+  // Headquarters
+  hqCity              String?
   hqCountry           String?
+  // optional: add later if you want
+  // hqRegion         String?
+
+  // Web presence
   website             String?
+  domain              String?
+
+  // Public / private + stock
+  isPublic            Boolean?       // NEW
   stockTicker         String?
   stockExchange       String?
-  domain  String?
-  revenueUSD          Int?
+
+  // Funding
+  fundingTotalUSD     Int?           // NEW - total raised in USD
+  fundingSummary      String?        // NEW - e.g. "Series D, $850M total"
+
+  // Leadership
+  ceoName             String?        // NEW
+
+  updatedAt           DateTime       @updatedAt
+
   businessUnits       BusinessUnit[]
   jobs                Job[]
   searchEvents        SearchEvent[]

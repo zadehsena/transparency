@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import JobCard, { type JobCardJob, type JobCardStats } from "./JobCard";
+import CompanyLogo from "@/components/CompanyLogo";
 
 export type Job = {
   id: string;
@@ -51,6 +52,15 @@ type OverallKPIs = {
   totalApplications: number;
   medianResponseDays: number | null;
 };
+
+function decodeHtmlEntities(str: string): string {
+  return str
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'");
+}
 
 export default function CompanyJobs({
   slug,
@@ -223,6 +233,11 @@ export default function CompanyJobs({
     }
   }
 
+  const selectedCompanyName =
+    selectedJob?.companyName ?? companyName;
+  const selectedCompanySlug =
+    selectedJob?.companySlug ?? slug;
+
   return (
     <div className="flex flex-col gap-2 lg:gap-3">
       {/* Filter bar */}
@@ -379,42 +394,77 @@ export default function CompanyJobs({
               </div>
             ) : (
               <>
-                <header className="mb-4">
-                  <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                    {selectedJob.title}
-                  </h2>
-                  <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                    {selectedJob.companyName ?? companyName}
-                    {selectedJob.location ? ` • ${selectedJob.location}` : ""}
-                  </p>
-                </header>
+                {/* Header: logo + title + company/location + apply button */}
+                <header className="mb-6 flex justify-between gap-4">
+                  {/* LEFT: logo + title */}
+                  <div className="flex gap-3 items-start">
+                    {/* Logo that stretches to match the text block height */}
+                    <div className="flex items-stretch">
+                      <div className="flex items-center justify-center bg-gray-900 rounded-md p-2">
+                        <CompanyLogo
+                          slug={selectedCompanySlug}
+                          name={selectedCompanyName}
+                          size={40} // bigger logo
+                        />
+                      </div>
+                    </div>
 
-                <div className="prose prose-sm max-w-none text-gray-800 dark:prose-invert dark:text-gray-100">
-                  {selectedJob.descriptionHtml ? (
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: selectedJob.descriptionHtml,
-                      }}
-                    />
-                  ) : (
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Full description not available for this listing.
-                    </p>
-                  )}
-                </div>
+                    {/* Title + Company */}
+                    <div className="flex flex-col justify-center">
+                      <h2 className="text-xl font-semibold text-gray-100">
+                        {selectedJob.title}
+                      </h2>
+                      <p className="mt-1 text-sm text-gray-400">
+                        {selectedCompanyName}
+                        {selectedJob.location ? ` • ${selectedJob.location}` : ""}
+                      </p>
+                    </div>
+                  </div>
 
-                {selectedJob.url && (
-                  <div className="mt-6">
+                  {/* RIGHT: Apply button */}
+                  {selectedJob.url && (
                     <a
                       href={selectedJob.url}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center justify-center rounded-full bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-500"
+                      className="
+  btn-shine
+  inline-flex items-center justify-center rounded-full 
+  bg-blue-600 px-4 py-2 text-sm font-medium text-white 
+  hover:bg-blue-500
+  transition-all duration-300
+  whitespace-nowrap
+"
                     >
-                      Apply on {selectedJob.companyName ?? companyName}
+                      Apply on {selectedCompanyName}
                     </a>
-                  </div>
-                )}
+                  )}
+                </header>
+
+                {/* Description */}
+                <div
+                  className="
+                    prose prose-sm max-w-none text-gray-800 dark:prose-invert dark:text-gray-100
+                    leading-relaxed
+                    [&_p>strong]:block
+                    [&_p>strong]:text-lg
+                    [&_p>strong]:font-semibold
+                    [&_p>strong]:text-gray-100
+                    [&_p>strong]:mt-6
+                    [&_p>strong]:mb-2
+                    [&_p]:my-3
+                    [&_ul]:my-4
+                    [&_li]:my-1.5
+                  "
+                >
+                  <div
+                    dangerouslySetInnerHTML={{
+                      __html: decodeHtmlEntities(
+                        selectedJob.descriptionHtml ?? ""
+                      ),
+                    }}
+                  />
+                </div>
               </>
             )}
           </aside>
