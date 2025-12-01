@@ -73,39 +73,45 @@ export default function ApplicationsSankey({
 
     const total = apps.length;
 
+    // Only keep statuses that actually have data
+    const activeStatuses = STATUS_ORDER.filter((s) => counts[s] > 0);
+
+    if (activeStatuses.length === 0) return null;
+
     // Nodes:
     // 0: All applications
-    // 1..N: each status node
+    // 1..N: each active status node
     const nodes = [
         { name: `All applications (${total})` },
-        ...STATUS_ORDER.map((k) => ({
+        ...activeStatuses.map((k) => ({
             name: `${STATUS_LABEL[k]} (${counts[k]})`,
         })),
     ];
 
-    // Links: All applications -> each status
-    const links = STATUS_ORDER
-        .map((status, idx) => ({
-            source: 0,
-            target: idx + 1,
-            value: counts[status],
-        }))
-        .filter((l) => l.value > 0);
-
-    if (!links.length) return null;
+    // Links: All applications -> each active status
+    const links = activeStatuses.map((status, idx) => ({
+        source: 0,
+        target: idx + 1,
+        value: counts[status],
+    }));
 
     const data = { nodes, links };
+
+    // Dynamic height so we don't get a huge empty box
+    const chartHeight = Math.max(160, activeStatuses.length * 50); // px
 
     return (
         <div className="rounded-2xl border bg-white p-4 dark:border-gray-800 dark:bg-gray-900">
             <h3 className="mb-3 text-sm font-semibold text-gray-800 dark:text-gray-200">
                 {title}
             </h3>
-            <div className="h-72 w-full overflow-x-auto">
+
+            {/* Chart */}
+            <div className="w-full" style={{ height: chartHeight }}>
                 <ResponsiveContainer width="100%" height="100%">
                     <Sankey
                         data={data}
-                        nodePadding={40}
+                        nodePadding={24}               // smaller padding
                         nodeWidth={12}
                         margin={{ left: 10, right: 10, top: 10, bottom: 10 }}
                         link={{ strokeOpacity: 0.4 }}
@@ -113,10 +119,9 @@ export default function ApplicationsSankey({
                         <Tooltip />
                     </Sankey>
                 </ResponsiveContainer>
-
-                {/* Legend */}
-                <SankeyLegend />
             </div>
+
+            <SankeyLegend />
         </div>
     );
 }

@@ -1,5 +1,7 @@
 // src/components/CompanyMyApplications.tsx
 "use client";
+
+import { useEffect, useState } from "react";
 import ApplicationsSankey from "@/components/ApplicationsSankey";
 
 type StatusKey = "clicked" | "applied" | "interview" | "offer" | "rejected";
@@ -30,6 +32,31 @@ const LABELS = {
     offers: "Offers received",
 };
 
+const APPLICATION_STATUSES: StatusKey[] = [
+    "clicked",
+    "applied",
+    "interview",
+    "offer",
+    "rejected",
+];
+
+function statusLabel(status: StatusKey) {
+    switch (status) {
+        case "clicked":
+            return "Clicked apply";
+        case "applied":
+            return "Applied";
+        case "interview":
+            return "Interview";
+        case "offer":
+            return "Offer";
+        case "rejected":
+            return "Rejected";
+        default:
+            return status;
+    }
+}
+
 export default function CompanyMyApplications({
     slug,
     name,
@@ -50,7 +77,12 @@ export default function CompanyMyApplications({
         { key: "offers" as const, label: LABELS.offers, value: s.offers },
     ];
 
-    const apps = applications ?? [];
+    // local state so we can optimistically update status
+    const [apps, setApps] = useState(applications ?? []);
+
+    useEffect(() => {
+        setApps(applications ?? []);
+    }, [applications]);
 
     const formatDate = (iso?: string | null) => {
         if (!iso) return "—";
@@ -63,20 +95,21 @@ export default function CompanyMyApplications({
         });
     };
 
-    const statusLabel = (status: StatusKey) => {
-        switch (status) {
-            case "clicked":
-                return "Clicked apply";
-            case "applied":
-                return "Applied";
-            case "interview":
-                return "Interview";
-            case "offer":
-                return "Offer";
-            case "rejected":
-                return "Rejected";
-            default:
-                return status;
+    const handleStatusChange = async (id: string, status: StatusKey) => {
+        // optimistic update
+        setApps((prev) =>
+            prev.map((a) => (a.id === id ? { ...a, status } : a))
+        );
+
+        try {
+            await fetch(`/api/applications/${id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status }),
+            });
+        } catch (e) {
+            console.error("Failed to update status", e);
+            // optional: rollback here if you want
         }
     };
 
@@ -143,7 +176,6 @@ export default function CompanyMyApplications({
                                     <th className="px-4 py-3 text-left font-medium text-gray-600 dark:text-gray-300">
                                         First Response
                                     </th>
-                                    <th className="px-4 py-3" />
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-200 dark:divide-gray-800">
@@ -152,31 +184,50 @@ export default function CompanyMyApplications({
                                         key={a.id}
                                         className="hover:bg-gray-100/70 dark:hover:bg-gray-900/60"
                                     >
+                                        {/* Job title (now the link) */}
                                         <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
-                                            {a.jobTitle}
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                                            {statusLabel(a.status)}
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                                            {formatDate(a.appliedAt)}
-                                        </td>
-                                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
-                                            {formatDate(a.firstResponseAt ?? null)}
-                                        </td>
-                                        <td className="px-4 py-3 text-right">
                                             {a.url ? (
                                                 <a
                                                     href={a.url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="text-gray-900 underline underline-offset-2 hover:no-underline dark:text-gray-100"
+                                                    className="underline underline-offset-2 hover:no-underline"
                                                 >
-                                                    View job
+                                                    {a.jobTitle}
                                                 </a>
                                             ) : (
-                                                <span className="text-gray-400">—</span>
+                                                <span>{a.jobTitle}</span>
                                             )}
+                                        </td>
+
+                                        {/* Status (editable) */}
+                                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                            <select
+                                                value={a.status}
+                                                onChange={(e) =>
+                                                    handleStatusChange(
+                                                        a.id,
+                                                        e.target.value as StatusKey
+                                                    )
+                                                }
+                                                className="rounded-md border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700"
+                                            >
+                                                {APPLICATION_STATUSES.map((s) => (
+                                                    <option key={s} value={s}>
+                                                        {statusLabel(s)}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </td>
+
+                                        {/* Applied */}
+                                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                            {formatDate(a.appliedAt)}
+                                        </td>
+
+                                        {/* First Response */}
+                                        <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                                            {formatDate(a.firstResponseAt ?? null)}
                                         </td>
                                     </tr>
                                 ))}
