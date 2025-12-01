@@ -1,5 +1,6 @@
 // src/components/CompanyMyApplications.tsx
 "use client";
+import ApplicationsSankey from "@/components/ApplicationsSankey";
 
 type StatusKey = "clicked" | "applied" | "interview" | "offer" | "rejected";
 
@@ -106,6 +107,16 @@ export default function CompanyMyApplications({
                     </div>
                 ))}
             </div>
+
+            {/* Company-level Sankey */}
+            {apps.length > 0 && (
+                <div className="mt-6">
+                    <ApplicationsSankey
+                        apps={apps}
+                        title={`Where did my applications at ${name} go?`}
+                    />
+                </div>
+            )}
 
             {/* Job list */}
             <div className="mt-6 rounded-xl border border-gray-100 bg-gray-50 text-sm dark:border-gray-800 dark:bg-gray-950">

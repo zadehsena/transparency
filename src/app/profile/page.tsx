@@ -5,6 +5,8 @@ import { Suspense, useCallback, useEffect, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import ProfileTabs, { type ProfileTabKey } from "@/components/ProfileTabs";
 import ProfileSettings from "@/components/ProfileSettings";
+import ApplicationsSankey from "@/components/ApplicationsSankey";
+import Link from "next/link";
 
 /* =========================
    Types
@@ -50,6 +52,31 @@ type Application = {
   url?: string;
   firstResponseAt?: string; // ISO (optional)
 };
+
+const APPLICATION_STATUSES: Application["status"][] = [
+  "clicked",
+  "applied",
+  "interview",
+  "offer",
+  "rejected",
+];
+
+function labelStatus(s: Application["status"]) {
+  switch (s) {
+    case "clicked":
+      return "Clicked apply";
+    case "applied":
+      return "Applied";
+    case "interview":
+      return "Interview";
+    case "offer":
+      return "Offer";
+    case "rejected":
+      return "Rejected";
+    default:
+      return s;
+  }
+}
 
 const PROFILE_TABS: ProfileTabKey[] = ["profile", "applications", "settings"];
 
@@ -179,6 +206,32 @@ function ProfileContent() {
   const update = <K extends keyof Profile>(key: K, value: Profile[K]) =>
     setForm(prev => (prev ? { ...prev, [key]: value } : prev));
 
+  const handleStatusChange = async (
+    id: string,
+    status: Application["status"]
+  ) => {
+    // optimistic update: update local state immediately
+    setApps((prev) =>
+      prev
+        ? prev.map((app) =>
+          app.id === id ? { ...app, status } : app
+        )
+        : prev
+    );
+
+    try {
+      await fetch(`/api/applications/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status }),
+      });
+    } catch (e) {
+      console.error("Failed to update status", e);
+      // optional: rollback if you want
+      // setApps(prev => prev ? prev.map(...) : prev)
+    }
+  };
+
   if (loading || !form) return <Skeleton />;
 
   const headerName =
@@ -233,13 +286,20 @@ function ProfileContent() {
                   </div>
                 </div>
 
-                <div className="rounded-2xl border bg-white p-0 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
+                {/* Sankey breakdown */}
+                <ApplicationsSankey apps={apps ?? []} />
+
+                <div className="mt-6 rounded-2xl border bg-white p-0 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
                   {!apps ? (
-                    <div className="p-6 text-sm text-gray-600 dark:text-gray-400">Loading your applications…</div>
+                    <div className="p-6 text-sm text-gray-600 dark:text-gray-400">
+                      Loading your applications…
+                    </div>
                   ) : apps.length === 0 ? (
-                    <div className="p-6 text-sm text-gray-600 dark:text-gray-400">No applications yet.</div>
+                    <div className="p-6 text-sm text-gray-600 dark:text-gray-400">
+                      No applications yet.
+                    </div>
                   ) : (
-                    <ApplicationTable apps={apps} />
+                    <ApplicationTable apps={apps} onStatusChange={handleStatusChange} />
                   )}
                 </div>
               </>
@@ -344,36 +404,75 @@ function StatCard({ label, value }: { label: string; value: string }) {
   );
 }
 
-function ApplicationTable({ apps }: { apps: Application[] }) {
+function ApplicationTable({
+  apps,
+  onStatusChange,
+}: {
+  apps: Application[];
+  onStatusChange: (id: string, status: Application["status"]) => void;
+}) {
   return (
     <div className="overflow-x-auto">
       <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b bg-gray-50 text-left dark:border-gray-800 dark:bg-gray-950">
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">Company</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">Title</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">Status</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">Applied</th>
-            <th className="px-4 py-3 font-medium text-gray-700 dark:text-gray-200">First Response</th>
-            <th className="px-4 py-3"></th>
-          </tr>
-        </thead>
+        {/* ... */}
+
         <tbody className="divide-y dark:divide-gray-800">
           {apps.map((a) => (
             <tr key={a.id} className="hover:bg-gray-50 dark:hover:bg-gray-950/60">
-              <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{a.company}</td>
-              <td className="px-4 py-3 text-gray-900 dark:text-gray-100">{a.title}</td>
-              <td className="px-4 py-3 capitalize text-gray-700 dark:text-gray-300">{a.status}</td>
-              <td className="px-4 py-3 text-gray-700 dark:text-gray-300">{formatDate(a.appliedAt)}</td>
+              {/* Company */}
+              <td className="px-4 py-3 text-gray-900 dark:text-gray-100">
+                <Link
+                  href={`/company/${a.company.toLowerCase()}`}
+                  className="underline underline-offset-2 hover:no-underline"
+                >
+                  {a.company}
+                </Link>
+              </td>
+
+              {/* Title */}
+              <td className="px-4 py-3">
+                {a.url ? (
+                  <a
+                    href={a.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-gray-900 dark:text-gray-100 underline underline-offset-2 hover:no-underline"
+                  >
+                    {a.title}
+                  </a>
+                ) : (
+                  <span className="text-gray-900 dark:text-gray-100">{a.title}</span>
+                )}
+              </td>
+
+              {/* Status (editable) */}
+              <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                <select
+                  value={a.status}
+                  onChange={(e) =>
+                    onStatusChange(
+                      a.id,
+                      e.target.value as Application["status"]
+                    )
+                  }
+                  className="rounded-md border border-gray-300 bg-transparent px-2 py-1 text-xs dark:border-gray-700"
+                >
+                  {APPLICATION_STATUSES.map((s) => (
+                    <option key={s} value={s}>
+                      {labelStatus(s)}
+                    </option>
+                  ))}
+                </select>
+              </td>
+
+              {/* Applied */}
+              <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
+                {formatDate(a.appliedAt)}
+              </td>
+
+              {/* First Response */}
               <td className="px-4 py-3 text-gray-700 dark:text-gray-300">
                 {a.firstResponseAt ? formatDate(a.firstResponseAt) : "—"}
-              </td>
-              <td className="px-4 py-3 text-right">
-                {a.url ? (
-                  <a href={a.url} target="_blank" rel="noopener noreferrer" className="text-gray-900 underline underline-offset-2 hover:no-underline dark:text-gray-100">
-                    View
-                  </a>
-                ) : <span className="text-gray-400">—</span>}
               </td>
             </tr>
           ))}
