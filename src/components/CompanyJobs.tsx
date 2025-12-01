@@ -334,7 +334,9 @@ export default function CompanyJobs({
       ) : (
         <div className="grid gap-4 lg:grid-cols-[minmax(0,2.2fr)_minmax(0,3fr)] lg:items-start">
           {/* LEFT: list */}
-          <div className="rounded-2xl border bg-white p-3 shadow-sm dark:border-gray-800 dark:bg-gray-950 lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto">
+          <div className="rounded-2xl border bg-white p-3 shadow-sm 
+  dark:border-gray-800 dark:bg-gray-950 
+  lg:max-h-[calc(100vh-180px)] lg:overflow-y-auto">
             <ul className="space-y-3">
               {filteredJobs.map((job) => {
                 const cardJob: JobCardJob = {
@@ -387,7 +389,13 @@ export default function CompanyJobs({
           </div>
 
           {/* RIGHT: full description (desktop only) */}
-          <aside className="hidden rounded-2xl border bg-white p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900 lg:block lg:max-h-[calc(100vh-260px)] lg:overflow-y-auto">
+          <aside className="
+  hidden rounded-2xl border bg-white p-6 shadow-sm 
+  dark:border-gray-800 dark:bg-gray-900 
+  lg:block 
+  lg:max-h-[calc(100vh-180px)] 
+  lg:overflow-y-auto
+">
             {!selectedJob ? (
               <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
                 Select a job on the left to see the full description.
@@ -421,24 +429,45 @@ export default function CompanyJobs({
                     </div>
                   </div>
 
-                  {/* RIGHT: Apply button */}
-                  {selectedJob.url && (
-                    <a
-                      href={selectedJob.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
+                  {/* RIGHT: Apply + Request referral */}
+                  <div className="flex flex-col items-end gap-2">
+                    {selectedJob.url && (
+                      <a
+                        href={selectedJob.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="
+        btn-shine
+        inline-flex items-center justify-center rounded-full 
+        bg-blue-600 px-4 py-2 text-sm font-medium text-white 
+        hover:bg-blue-500
+        transition-all duration-300
+        whitespace-nowrap
+      "
+                      >
+                        Apply on {selectedCompanyName}
+                      </a>
+                    )}
+
+                    <button
+                      type="button"
                       className="
-  btn-shine
-  inline-flex items-center justify-center rounded-full 
-  bg-blue-600 px-4 py-2 text-sm font-medium text-white 
-  hover:bg-blue-500
-  transition-all duration-300
-  whitespace-nowrap
-"
+    btn-shine inline-flex items-center justify-center gap-2 rounded-full 
+    bg-amber-400 px-4 py-2 text-sm font-medium text-gray-900
+    hover:bg-amber-300
+    transition-all duration-300
+    whitespace-nowrap
+  "
                     >
-                      Apply on {selectedCompanyName}
-                    </a>
-                  )}
+                      <img
+                        src="/images/coins.png"
+                        alt="coins"
+                        className="h-4 w-4"
+                      />
+                      Request referral
+                    </button>
+                  </div>
+
                 </header>
 
                 {/* Description */}

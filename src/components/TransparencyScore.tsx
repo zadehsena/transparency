@@ -1,4 +1,8 @@
 // src/components/TransparencyScore.tsx
+"use client";
+
+import { useEffect, useState } from "react";
+
 export type TransparencyProps = {
     score?: number | null;             // 0-100
     responseRate?: number | null;      // %
@@ -12,6 +16,7 @@ function fmt(v?: number | null, suffix = "") {
     if (v == null || Number.isNaN(v)) return "—";
     return `${v}${suffix}`;
 }
+
 function tierFor(score?: number | null) {
     if (score == null) return { label: "Unknown", color: "bg-gray-200 text-gray-700" } as const;
     if (score >= 80) return { label: "Highly Transparent", color: "bg-emerald-100 text-emerald-700" } as const;
@@ -27,23 +32,61 @@ export default function TransparencyScore({
     jobAccuracy = null,
     trend90d = null,
 }: TransparencyProps) {
-    const pct = Math.max(0, Math.min(100, Number(score ?? 0)));
-    const ring = `conic-gradient(currentColor ${pct * 3.6}deg, #e5e7eb 0)`;
+    const targetPct = Math.max(0, Math.min(100, Number(score ?? 0)));
     const tier = tierFor(score);
+
+    // Animate only when we actually have a score
+    const shouldAnimate = score != null;
+
+    const [displayPct, setDisplayPct] = useState<number>(
+        shouldAnimate ? 0 : targetPct
+    );
+
+    useEffect(() => {
+        if (!shouldAnimate) {
+            setDisplayPct(targetPct);
+            return;
+        }
+
+        let frameId: number;
+        const duration = 900; // ms
+        const start = performance.now();
+
+        const tick = (now: number) => {
+            const elapsed = now - start;
+            const progress = Math.min(1, elapsed / duration);
+
+            // easeOutCubic for a nicer feel
+            const eased = 1 - Math.pow(1 - progress, 3);
+            setDisplayPct(targetPct * eased);
+
+            if (progress < 1) {
+                frameId = requestAnimationFrame(tick);
+            }
+        };
+
+        frameId = requestAnimationFrame(tick);
+
+        return () => cancelAnimationFrame(frameId);
+    }, [targetPct, shouldAnimate]);
+
+    const ring = `conic-gradient(currentColor ${displayPct * 3.6}deg, #e5e7eb 0)`;
 
     return (
         <div className="w-full rounded-2xl border bg-white p-4 sm:p-5">
             <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
                 <div className="flex items-center gap-4">
                     <div
-                        className="relative grid h-20 w-20 place-items-center text-indigo-600"
+                        className="relative grid h-20 w-20 place-items-center text-indigo-600 transition-[background-image]"
                         style={{ backgroundImage: ring, borderRadius: "9999px" }}
-                        aria-label={score == null ? "No score" : `Transparency Score ${pct}`}
+                        aria-label={score == null ? "No score" : `Transparency Score ${Math.round(targetPct)}`}
                         role="img"
                     >
                         <div className="absolute h-16 w-16 rounded-full bg-white" />
                         <div className="relative text-center">
-                            <div className="text-2xl font-semibold">{score == null ? "—" : Math.round(pct)}</div>
+                            <div className="text-2xl font-semibold">
+                                {score == null ? "—" : Math.round(displayPct)}
+                            </div>
                             <div className="text-[10px] uppercase tracking-wide text-gray-500">/100</div>
                         </div>
                     </div>

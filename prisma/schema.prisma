@@ -50,30 +50,16 @@ model Company {
   employeesHigh       Int?
   foundedYear         Int?
   industry            String?
-  revenueUSD          Int?
 
   // Headquarters
   hqCity              String?
   hqCountry           String?
-  // optional: add later if you want
-  // hqRegion         String?
 
   // Web presence
   website             String?
   domain              String?
-
-  // Public / private + stock
-  isPublic            Boolean?       // NEW
-  stockTicker         String?
-  stockExchange       String?
-
-  // Funding
-  fundingTotalUSD     Int?           // NEW - total raised in USD
-  fundingSummary      String?        // NEW - e.g. "Series D, $850M total"
-
-  // Leadership
-  ceoName             String?        // NEW
-
+  linkedinUrl         String? 
+  twitterUrl          String?
   updatedAt           DateTime       @updatedAt
 
   businessUnits       BusinessUnit[]

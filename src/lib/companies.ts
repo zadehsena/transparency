@@ -16,6 +16,15 @@ export type CompanyView = {
   medianTCSalaryUSD?: number | null;
   foundedYear?: number | null;
   hqCity?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
+
+  // ⭐ Add these:
+  hqCountry?: string | null;
+  industry?: string | null;
+  website?: string | null;
+  domain?: string | null;
+
   businessUnits: {
     name: string;
     applications: number;
@@ -24,6 +33,7 @@ export type CompanyView = {
     offers: number;
     medianResponseDays: number | null;
   }[];
+
   jobs: {
     id: string;
     title: string;
@@ -35,14 +45,17 @@ export type CompanyView = {
     region?: Region | null;
     descriptionHtml?: string | null;
   }[];
+
   jobCategories: {
     name: string;  // e.g. "Software"
     value: number; // # of open jobs
   }[];
+
   jobRegions: {
     name: string;
     value: number;
   }[];
+
   kpis: {
     overallResponseRate: number;
     totalApplications: number;
@@ -182,10 +195,15 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
 
     employeesLow: company.employeesLow ?? null,
     employeesHigh: company.employeesHigh ?? null,
-    medianBaseSalaryUSD: company.medianBaseSalaryUSD ?? null,
-    medianTCSalaryUSD: company.medianTCSalaryUSD ?? null,
     foundedYear: company.foundedYear ?? null,
     hqCity: company.hqCity ?? null,
+
+    hqCountry: company.hqCountry ?? null,
+    industry: company.industry ?? null,
+    website: company.website ?? null,
+    domain: company.domain ?? null,
+    linkedinUrl: company.linkedinUrl ?? null,
+    twitterUrl: company.twitterUrl ?? null,
 
     businessUnits,
     jobs,

@@ -81,12 +81,6 @@ export default function CompanyMyApplications({
                     </div>
                 ))}
             </div>
-
-            {/* Placeholder / future state */}
-            <p className="mt-4 text-xs text-gray-500 dark:text-gray-400">
-                This view will later show your actual applications to {name} once
-                tracking is connected. For now, these are placeholder counts.
-            </p>
         </div>
     );
 }

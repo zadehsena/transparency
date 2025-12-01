@@ -48,6 +48,16 @@ export default function JobCard({
         day: "numeric",
     });
 
+
+    // Shorten multi-location strings
+    let locationDisplay = job.location;
+    if (job.location) {
+        const parts = job.location.split(";").map((p) => p.trim()).filter(Boolean);
+        if (parts.length > 1) {
+            locationDisplay = `${parts[0]} and ${parts.length - 1} more`;
+        }
+    }
+
     const handleClick = () => {
         if (onSelect) {
             onSelect();
@@ -109,8 +119,8 @@ export default function JobCard({
                             })()
                         )}
 
-                        {job.companyName && job.location && <span>—</span>}
-                        {job.location && <span>{job.location}</span>}
+                        {job.companyName && locationDisplay && <span>—</span>}
+                        {locationDisplay && <span>{locationDisplay}</span>}
 
                         <span className="mx-1 text-gray-400">•</span>
                         <span className="text-xs text-gray-500 dark:text-gray-400">

@@ -217,10 +217,14 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               <CompanySummary
                 name={company.name}
                 hqCity={company.hqCity}
+                hqCountry={company.hqCountry}          // ✅ NEW
                 employeesLow={company.employeesLow}
                 employeesHigh={company.employeesHigh}
                 foundedYear={company.foundedYear}
                 domain={domain}
+                industry={company.industry}           // ✅ NEW
+                linkedinUrl={company.linkedinUrl}
+                twitterUrl={company.twitterUrl}
               />
 
               {/* 🔹 Open roles by category */}

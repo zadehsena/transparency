@@ -1,5 +1,5 @@
-// src/components/CompanySummary.tsx
 import React from "react";
+import Image from "next/image";
 
 function fmtEmployees(low?: number | null, high?: number | null) {
     if (low && high) return `${low.toLocaleString()}–${high.toLocaleString()}`;
@@ -8,68 +8,117 @@ function fmtEmployees(low?: number | null, high?: number | null) {
     return "—";
 }
 
+function fmtHeadquarters(city?: string | null, country?: string | null) {
+    const parts: string[] = [];
+    if (city) parts.push(city);
+    if (country) parts.push(country);
+    return parts.length ? parts.join(", ") : "—";
+}
+
 export default function CompanySummary({
     name,
     hqCity,
+    hqCountry,
     employeesLow,
     employeesHigh,
     foundedYear,
     domain,
+    industry,
+    linkedinUrl,
+    twitterUrl,
 }: {
     name: string;
     hqCity?: string | null;
+    hqCountry?: string | null;
     employeesLow?: number | null;
     employeesHigh?: number | null;
     foundedYear?: number | null;
-    domain?: string;
+    domain?: string | null;
+    industry?: string | null;
+    linkedinUrl?: string | null;
+    twitterUrl?: string | null;
 }) {
-    const pieces: string[] = [];
-    if (hqCity) pieces.push(`headquartered in ${hqCity}`);
-    if (employeesLow || employeesHigh) pieces.push(`employs ${fmtEmployees(employeesLow, employeesHigh)} people`);
-    if (foundedYear) pieces.push(`founded in ${foundedYear}`);
-
-    const summary =
-        pieces.length > 0
-            ? `${name} is ${pieces.join(", ")}.`
-            : `We’re collecting more details about ${name}.`;
-
     const website =
         domain && !/^https?:\/\//i.test(domain) ? `https://${domain}` : domain || "";
 
-    return (
-        <section className="rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
-            <div className="mb-1 text-lg font-bold text-white">Company overview</div>
-            <p className="mb-4 text-sm leading-6 text-gray-300">{summary}</p>
+    // For now: everything falls back to website so all icons show
+    const websiteHref = website || "#";
+    const linkedinHref = linkedinUrl || websiteHref;
+    const twitterHref = twitterUrl || websiteHref;
 
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <div className="rounded-lg border border-gray-800 p-3">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">Headquarters</div>
-                    <div className="text-sm text-gray-200">{hqCity || "—"}</div>
+    return (
+        <section className="relative rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
+            {/* HEADER + SOCIAL ICONS */}
+            <div className="mb-4 flex items-center">
+                <div className="text-lg font-bold text-white">Company overview</div>
+
+                <div className="absolute top-6 right-6 flex items-center gap-3">
+                    <a href={websiteHref} target="_blank" rel="noreferrer">
+                        <Image
+                            src="/images/social/website.png"
+                            alt="Website"
+                            width={20}
+                            height={20}
+                            className="h-5 w-5 opacity-80 hover:opacity-100 transition"
+                        />
+                    </a>
+
+                    <a href={linkedinHref} target="_blank" rel="noreferrer">
+                        <Image
+                            src="/images/social/linkedIn.png"
+                            alt="LinkedIn"
+                            width={20}
+                            height={20}
+                            className="h-5 w-5 opacity-80 hover:opacity-100 transition"
+                        />
+                    </a>
+
+                    <a href={twitterHref} target="_blank" rel="noreferrer">
+                        <Image
+                            src="/images/social/x.png"
+                            alt="X"
+                            width={20}
+                            height={20}
+                            className="h-5 w-5 opacity-80 hover:opacity-100 transition"
+                        />
+                    </a>
                 </div>
+            </div>
+
+            {/* MAIN GRID */}
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 md:grid-cols-4">
                 <div className="rounded-lg border border-gray-800 p-3">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">Employees</div>
+                    <div className="text-xs uppercase tracking-wide text-gray-400">
+                        Headquarters
+                    </div>
+                    <div className="text-sm text-gray-200">
+                        {fmtHeadquarters(hqCity, hqCountry)}
+                    </div>
+                </div>
+
+                <div className="rounded-lg border border-gray-800 p-3">
+                    <div className="text-xs uppercase tracking-wide text-gray-400">
+                        Employees
+                    </div>
                     <div className="text-sm text-gray-200">
                         {fmtEmployees(employeesLow, employeesHigh)}
                     </div>
                 </div>
+
                 <div className="rounded-lg border border-gray-800 p-3">
-                    <div className="text-xs uppercase tracking-wide text-gray-400">Founded</div>
+                    <div className="text-xs uppercase tracking-wide text-gray-400">
+                        Founded
+                    </div>
                     <div className="text-sm text-gray-200">{foundedYear ?? "—"}</div>
                 </div>
-            </div>
 
-            {website ? (
-                <div className="mt-4 text-xs">
-                    <a
-                        href={website}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="text-gray-300 underline decoration-gray-500 underline-offset-2 hover:text-white"
-                    >
-                        Visit website
-                    </a>
+                <div className="rounded-lg border border-gray-800 p-3">
+                    <div className="text-xs uppercase tracking-wide text-gray-400">
+                        Industry
+                    </div>
+                    <div className="text-sm text-gray-200">{industry || "—"}</div>
                 </div>
-            ) : null}
+            </div>
         </section>
     );
 }

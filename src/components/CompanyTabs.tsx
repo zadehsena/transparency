@@ -24,8 +24,8 @@ export default function CompanyTabs({
 
   const tabs: { key: CompanyTabKey; label: string }[] = [
     { key: "overview", label: "Overview" },
-    { key: "metrics", label: "Metrics" },
     { key: "jobs", label: "Job Listings" },
+    { key: "metrics", label: "Metrics" },
     { key: "myapps", label: "My Applications" },
   ];
 
