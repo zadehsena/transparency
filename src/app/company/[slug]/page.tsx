@@ -28,6 +28,9 @@ import {
   LABEL as CATEGORY_LABEL,
   CATEGORY_ICONS,
 } from "@/lib/jobs/categoryMeta";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
 
 type Params = { slug: string };
 type Search = {
@@ -126,6 +129,78 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const weekly = aggregateWeeklyOpenClosed(company.jobs ?? [], 26); // opened vs closed
   const monthly = aggregateMonthlyOpenClosed(company.jobs ?? [], 12);
 
+  // ---- My applications at this company (for logged-in user) ----
+  const session = await getServerSession(authOptions);
+
+  let myCompanyStats:
+    | {
+      applied: number;
+      rejected: number;
+      interviews: number;
+      offers: number;
+    }
+    | undefined;
+
+  let myCompanyApplications:
+    | {
+      id: string;
+      jobTitle: string;
+      status: "clicked" | "applied" | "interview" | "offer" | "rejected";
+      appliedAt: string;
+      firstResponseAt?: string | null;
+      url?: string | null;
+    }[]
+    | undefined;
+
+  if (session?.user?.email) {
+    const user = await prisma.user.findUnique({
+      where: { email: session.user.email },
+    });
+
+    if (user) {
+      const apps = await prisma.application.findMany({
+        where: {
+          userId: user.id,
+          job: {
+            companyId: company.id, // 👈 only this company
+          },
+        },
+        include: {
+          job: true,
+        },
+        orderBy: { createdAt: "desc" },
+      });
+
+      const appliedCount = apps.filter((a) => a.status === "applied").length;
+      const rejectedCount = apps.filter((a) => a.status === "rejected").length;
+      const interviewCount = apps.filter((a) => a.status === "interview").length;
+      const offerCount = apps.filter((a) => a.status === "offer").length;
+
+      myCompanyStats = {
+        applied: appliedCount,
+        rejected: rejectedCount,
+        interviews: interviewCount,
+        offers: offerCount,
+      };
+
+      myCompanyApplications = apps.map((a) => ({
+        id: a.id,
+        jobTitle: a.job.title,
+        status: a.status as
+          | "clicked"
+          | "applied"
+          | "interview"
+          | "offer"
+          | "rejected",
+        appliedAt: (a.submittedAt ?? a.createdAt).toISOString(),
+        firstResponseAt: a.firstResponseAt
+          ? a.firstResponseAt.toISOString()
+          : null,
+        url: a.job.url ?? null,
+      }));
+    }
+  }
+
   return (
     <div className="mx-auto max-w-6xl p-4">
       {/* Header */}
@@ -201,10 +276,18 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         )}
 
         {activeTab === "myapps" && (
-          <CompanyMyApplications
-            slug={company.slug}
-            name={company.name}
-          />
+          session?.user?.email ? (
+            <CompanyMyApplications
+              slug={company.slug}
+              name={company.name}
+              stats={myCompanyStats}
+              applications={myCompanyApplications}
+            />
+          ) : (
+            <div className="mt-4 rounded-2xl border bg-white p-6 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
+              Sign in to see your applications at {company.name}.
+            </div>
+          )
         )}
       </div>
 

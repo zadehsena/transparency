@@ -486,7 +486,7 @@ export default function CompanyJobs({
                         alt="coins"
                         className="h-4 w-4"
                       />
-                      Request referral
+                      Request Referral
                     </button>
                   </div>
 
