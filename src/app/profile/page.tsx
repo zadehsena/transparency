@@ -45,7 +45,7 @@ type Application = {
   id: string;
   company: string;
   title: string;
-  status: "applied" | "screen" | "interview" | "offer" | "rejected";
+  status: "clicked" | "applied" | "interview" | "offer" | "rejected";
   appliedAt: string;        // ISO
   url?: string;
   firstResponseAt?: string; // ISO (optional)
@@ -59,16 +59,22 @@ const PROFILE_TABS: ProfileTabKey[] = ["profile", "applications", "settings"];
 function computeAppStats(apps: Application[] | null | undefined) {
   const list = Array.isArray(apps) ? apps : [];
   const total = list.length;
-  const responded = list.filter(a =>
-    a.status === "screen" || a.status === "interview" || a.status === "offer" || a.status === "rejected"
+
+  // any status other than clicked counts as a "response"
+  const responded = list.filter(
+    (a) => a.status !== "clicked"
   ).length;
+
   const overallResponseRate = total ? Math.round((responded / total) * 100) : 0;
 
-  const diffs = list.filter(a => a.firstResponseAt).map(a => {
-    const applied = new Date(a.appliedAt).getTime();
-    const first = new Date(a.firstResponseAt as string).getTime();
-    return Math.max(0, (first - applied) / 86400000);
-  }).sort((a, b) => a - b);
+  const diffs = list
+    .filter((a) => a.firstResponseAt)
+    .map((a) => {
+      const applied = new Date(a.appliedAt).getTime();
+      const first = new Date(a.firstResponseAt as string).getTime();
+      return Math.max(0, (first - applied) / 86400000);
+    })
+    .sort((a, b) => a - b);
 
   let medianResponseDays: number | null = null;
   if (diffs.length) {
@@ -78,6 +84,7 @@ function computeAppStats(apps: Application[] | null | undefined) {
   }
   return { total, overallResponseRate, medianResponseDays };
 }
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   return Number.isNaN(d.getTime()) ? "—" :
@@ -141,11 +148,25 @@ function ProfileContent() {
 
         const p = (await pRes.json()) as Profile;
         const raw = await aRes.json();
-        const a: Application[] = Array.isArray(raw) ? raw : (raw?.applications ?? []);
+
+        // raw.applications is an array of Application records with `job` included
+        const rawApps: any[] = Array.isArray(raw?.applications) ? raw.applications : [];
+
+        const a: Application[] = rawApps.map((app) => ({
+          id: app.id,
+          company: app.job?.company ?? "—",
+          title: app.job?.title ?? "—",
+          status: app.status as Application["status"],
+          appliedAt: (app.submittedAt ?? app.createdAt) as string,
+          url: app.job?.url ?? undefined,
+          firstResponseAt: (app.firstResponseAt ?? undefined) as string | undefined,
+        }));
+
         if (!active) return;
 
         setForm(p);
         setApps(a);
+
       } catch (e: unknown) {
         setError(e instanceof Error ? e.message : "Failed to load");
       } finally {

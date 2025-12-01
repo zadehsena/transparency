@@ -5,6 +5,7 @@ import AuthButtons from "@/components/AuthButtons";
 import HeaderSearch from "@/components/HeaderSearch"; // new
 import Image from "next/image";
 import Link from "next/link";
+import PendingApplicationsPrompt from "@/components/PendingApplicationsPrompt";
 
 export const metadata: Metadata = {
   title: "Transparency",
@@ -19,6 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en">
       <body className="flex min-h-screen flex-col bg-gray-50 text-gray-900 antialiased">
         <Providers>
+          <PendingApplicationsPrompt />
           <header className="border-b bg-white">
             <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
               <Link href="/" className="flex items-center gap-2 hover:opacity-80">

@@ -1,8 +1,8 @@
 // src/components/CompanyJobs.tsx
 "use client";
-
-import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
+import { openAuthModal } from "@/lib/authModal";
+import { useEffect, useMemo, useRef, useState } from "react";
 import JobCard, { type JobCardJob, type JobCardStats } from "./JobCard";
 import CompanyLogo from "@/components/CompanyLogo";
 
@@ -233,6 +233,29 @@ export default function CompanyJobs({
     }
   }
 
+  async function handleApplySelected() {
+    if (!selectedJob || !selectedJob.url) return;
+
+    // not logged in → show your existing login/signup modal
+    if (!isAuthed) {
+      openAuthModal("login");
+      return;
+    }
+
+    try {
+      await fetch("/api/applications", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ jobId: selectedJob.id }),
+      });
+    } catch (err) {
+      console.error("Failed to track application click", err);
+      // still let them apply
+    } finally {
+      window.open(selectedJob.url, "_blank", "noopener,noreferrer");
+    }
+  }
+
   const selectedCompanyName =
     selectedJob?.companyName ?? companyName;
   const selectedCompanySlug =
@@ -432,21 +455,20 @@ export default function CompanyJobs({
                   {/* RIGHT: Apply + Request referral */}
                   <div className="flex flex-col items-end gap-2">
                     {selectedJob.url && (
-                      <a
-                        href={selectedJob.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
+                      <button
+                        type="button"
+                        onClick={handleApplySelected}
                         className="
-        btn-shine
-        inline-flex items-center justify-center rounded-full 
-        bg-blue-600 px-4 py-2 text-sm font-medium text-white 
-        hover:bg-blue-500
-        transition-all duration-300
-        whitespace-nowrap
-      "
+      btn-shine
+      inline-flex items-center justify-center rounded-full 
+      bg-blue-600 px-4 py-2 text-sm font-medium text-white 
+      hover:bg-blue-500
+      transition-all duration-300
+      whitespace-nowrap
+    "
                       >
                         Apply on {selectedCompanyName}
-                      </a>
+                      </button>
                     )}
 
                     <button
