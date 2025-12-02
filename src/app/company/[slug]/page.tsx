@@ -1,36 +1,27 @@
 // src/app/company/[slug]/page.tsx
 import { notFound } from "next/navigation";
-import {
-  getCompanyBySlug,
-  getRandomCompanies,
-  type CompanyView,
-} from "@/lib/companies";
-import CompanyTabs, { type CompanyTabKey } from "@/components/CompanyTabs";
-import CompanyMetrics from "@/components/CompanyMetrics";
-import CompanyJobs from "@/components/CompanyJobs";
-import CompanyLogo from "@/components/CompanyLogo";
-import TransparencyScore, {
-  type TransparencyProps,
-} from "@/components/TransparencyScore";
-import CompanyNews from "@/components/CompanyNews";
-import SimilarCompanies from "@/components/SimilarCompanies";
-import CompanySummary from "@/components/CompanySummary";
-import CompanyMyApplications from "@/components/CompanyMyApplications";
-import {
-  aggregateWeeklyOpenClosed,
-  aggregateMonthlyOpenClosed,
-} from "@/lib/aggregateJobs";
-import type { JobCategory } from "@prisma/client";
 import Link from "next/link";
 import Image from "next/image";
-import {
-  CATEGORY_ORDER,
-  LABEL as CATEGORY_LABEL,
-  CATEGORY_ICONS,
-} from "@/lib/jobs/categoryMeta";
 import { getServerSession } from "next-auth";
+
+import { getCompanyBySlug, getRandomCompanies, type CompanyView } from "@/lib/companies";
+import { aggregateWeeklyOpenClosed, aggregateMonthlyOpenClosed } from "@/lib/aggregateJobs";
+import { CATEGORY_ORDER, LABEL as CATEGORY_LABEL, CATEGORY_ICONS } from "@/lib/jobs/categoryMeta";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+
+import CompanyTabs, { type CompanyTabKey } from "@/components/company/CompanyTabs";
+import CompanyMetrics from "@/components/company/CompanyMetrics";
+import CompanyJobs from "@/components/company/CompanyJobs";
+import CompanyLogo from "@/components/company/CompanyLogo";
+import CompanyNews from "@/components/company/CompanyNews";
+import CompanySummary from "@/components/company/CompanySummary";
+import CompanyMyApplications from "@/components/company/CompanyMyApplications";
+import SimilarCompanies from "@/components/company/SimilarCompanies";
+import TransparencyScore, { type TransparencyProps } from "@/components/TransparencyScore";
+
+import type { JobCategory } from "@prisma/client";
+
 
 type Params = { slug: string };
 type Search = {

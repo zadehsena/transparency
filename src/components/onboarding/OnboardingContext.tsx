@@ -1,5 +1,13 @@
+// src/components/onboarding/OnboardingContext.tsx
 "use client";
-import { createContext, useContext, useMemo, useState } from "react";
+
+import {
+    createContext,
+    useContext,
+    useMemo,
+    useState,
+    type ReactNode,
+} from "react";
 
 export type OnboardingData = {
     firstName?: string;
@@ -20,7 +28,7 @@ export type OnboardingData = {
     };
 };
 
-type Ctx = {
+type OnboardingContextValue = {
     step: number;
     total: number;
     data: OnboardingData;
@@ -29,27 +37,38 @@ type Ctx = {
     back: () => void;
 };
 
-const C = createContext<Ctx | null>(null);
+const OnboardingContext = createContext<OnboardingContextValue | null>(null);
 
-export function OnboardingProvider({ children }: { children: React.ReactNode }) {
+export function OnboardingProvider({ children }: { children: ReactNode }) {
     const [step, setStep] = useState(1);
     const [data, setDataState] = useState<OnboardingData>({});
-    const total = 8; // Name, Birthdate, Location, Interests, Level (Confirm shown after)
 
-    const value = useMemo<Ctx>(() => ({
-        step,
-        total,
-        data,
-        setData: (d) => setDataState((p) => ({ ...p, ...d })),
-        next: () => setStep((s) => Math.min(s + 1, total)),
-        back: () => setStep((s) => Math.max(s - 1, 1)),
-    }), [step, data]);
+    // 7 steps + confirm = 8
+    const total = 8;
 
-    return <C.Provider value={value}>{children}</C.Provider>;
+    const value = useMemo<OnboardingContextValue>(
+        () => ({
+            step,
+            total,
+            data,
+            setData: (d) => setDataState((prev) => ({ ...prev, ...d })),
+            next: () => setStep((s) => Math.min(s + 1, total)),
+            back: () => setStep((s) => Math.max(s - 1, 1)),
+        }),
+        [step, data]
+    );
+
+    return (
+        <OnboardingContext.Provider value={value}>
+            {children}
+        </OnboardingContext.Provider>
+    );
 }
 
-export const useOnboarding = () => {
-    const ctx = useContext(C);
-    if (!ctx) throw new Error("OnboardingContext missing");
+export function useOnboarding() {
+    const ctx = useContext(OnboardingContext);
+    if (!ctx) {
+        throw new Error("useOnboarding must be used within OnboardingProvider");
+    }
     return ctx;
-};
+}

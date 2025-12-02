@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import CompanyLogo from "./CompanyLogo";
+import CompanyLogo from "@/components/company/CompanyLogo";
 
 function slugifyCompany(raw: string) {
   return raw.trim().toLowerCase().replace(/&/g, " and ").replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "");

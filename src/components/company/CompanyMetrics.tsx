@@ -1,7 +1,7 @@
 "use client";
 
-import CompanyJobPostingsChart, { type Point } from "@/components/CompanyJobPostingsChart";
-import CompanyJobCategoryPieChart from "@/components/CompanyJobCategoryPieChart";
+import CompanyJobPostingsChart, { type Point } from "@/components/company/CompanyJobPostingsChart";
+import CompanyJobCategoryPieChart from "@/components/company/CompanyJobCategoryPieChart";
 
 type KPI = {
     overallResponseRate: number | null;

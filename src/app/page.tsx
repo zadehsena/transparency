@@ -2,7 +2,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import CompanyLogo from "@/components/CompanyLogo";
+import CompanyLogo from "@/components/company/CompanyLogo";
 
 export const revalidate = 60; // cache for 1 minute
 

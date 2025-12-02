@@ -1,10 +1,11 @@
-// src/components/CompanyJobs.tsx
+// src/components/company/CompanyJobs.tsx
 "use client";
+
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { openAuthModal } from "@/lib/authModal";
-import { useEffect, useMemo, useRef, useState } from "react";
-import JobCard, { type JobCardJob, type JobCardStats } from "./JobCard";
-import CompanyLogo from "@/components/CompanyLogo";
+import JobCard, { type JobCardJob, type JobCardStats } from "@/components/JobCard";
+import CompanyLogo from "@/components/company/CompanyLogo";
 
 export type Job = {
   id: string;

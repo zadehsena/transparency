@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import CompanyLogo from "@/components/CompanyLogo";
+import CompanyLogo from "@/components/company/CompanyLogo";
 
 type Item = {
     slug: string;
