@@ -104,6 +104,12 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const openCategories =
     (company.jobCategories ?? []).filter((c) => c.value > 0);
 
+  const sortedOpenCategories = [...openCategories].sort((a, b) => {
+    if (a.name === "Other" && b.name !== "Other") return 1;   // push a down
+    if (b.name === "Other" && a.name !== "Other") return -1;  // push b down
+    return 0;
+  });
+
   const CATEGORY_BY_LABEL: Record<string, JobCategory> = Object.fromEntries(
     CATEGORY_ORDER.map((key) => [CATEGORY_LABEL[key], key])
   ) as Record<string, JobCategory>;
@@ -312,13 +318,13 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               />
 
               {/* 🔹 Open roles by category */}
-              {openCategories.length > 0 && (
+              {sortedOpenCategories.length > 0 && (
                 <section>
                   <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-200 mb-3">
                     Open roles by category
                   </h2>
                   <div className="grid gap-3 grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-                    {openCategories.map((cat) => {
+                    {sortedOpenCategories.map((cat) => {
                       const key = CATEGORY_BY_LABEL[cat.name] ?? "other";
                       const label = CATEGORY_LABEL[key];
                       const iconSrc = CATEGORY_ICONS[key];
