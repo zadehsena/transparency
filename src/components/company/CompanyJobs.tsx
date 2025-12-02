@@ -391,25 +391,35 @@ export default function CompanyJobs({
 
             {/* pagination */}
             {!disableLoadMore && (
-              <div className="mt-4 flex items-center justify-between text-xs text-gray-500">
-                <div>Showing {filteredJobs.length}</div>
-                <div className="flex items-center gap-2">
-                  {error && <span className="text-red-600">{error}</span>}
-                  {hasNext ? (
-                    <button
-                      onClick={loadMore}
-                      disabled={loading}
-                      className="rounded-xl bg-black px-3 py-2 text-white disabled:opacity-60"
-                    >
-                      {loading ? "Loading…" : "Load more"}
-                    </button>
-                  ) : (
-                    <span>End</span>
-                  )}
-                </div>
+              <div className="mt-4 space-y-2 text-xs text-gray-500">
+                {error && (
+                  <p className="px-1 text-[11px] text-red-500">
+                    {error}
+                  </p>
+                )}
+
+                {hasNext ? (
+                  <button
+                    type="button"
+                    onClick={loadMore}
+                    disabled={loading}
+                    className="
+          w-full rounded-2xl border border-gray-800 
+          bg-slate-950 px-4 py-3 text-sm font-medium text-gray-100
+          text-center shadow-sm
+          transition hover:border-gray-600 hover:bg-slate-900
+          disabled:cursor-not-allowed disabled:opacity-60
+        "
+                  >
+                    {loading ? "Loading…" : "Load more roles"}
+                  </button>
+                ) : (
+                  <span className="block text-center text-[11px] text-gray-500">
+                    End of list
+                  </span>
+                )}
               </div>
             )}
-
           </div>
 
           {/* RIGHT: full description (desktop only) */}
@@ -427,23 +437,23 @@ export default function CompanyJobs({
             ) : (
               <>
                 {/* Header: logo + title + company/location + apply button */}
-                <header className="mb-6 flex justify-between gap-4">
+                <header className="mb-6 flex items-start justify-between gap-4">
                   {/* LEFT: logo + title */}
-                  <div className="flex gap-3 items-start">
-                    {/* Logo that stretches to match the text block height */}
-                    <div className="flex items-stretch">
-                      <div className="flex items-center justify-center bg-gray-900 rounded-md p-2">
+                  <div className="flex min-w-0 flex-1 gap-3">
+                    {/* Logo should NEVER shrink */}
+                    <div className="flex-shrink-0">
+                      <div className="flex items-center justify-center rounded-md bg-gray-900 p-2">
                         <CompanyLogo
                           slug={selectedCompanySlug}
                           name={selectedCompanyName}
-                          size={40} // bigger logo
+                          size={40}
                         />
                       </div>
                     </div>
 
-                    {/* Title + Company */}
-                    <div className="flex flex-col justify-center">
-                      <h2 className="text-xl font-semibold text-gray-100">
+                    {/* Title + company */}
+                    <div className="flex min-w-0 flex-col justify-center">
+                      <h2 className="text-xl font-semibold leading-snug text-gray-100 break-words">
                         {selectedJob.title}
                       </h2>
                       <p className="mt-1 text-sm text-gray-400">
@@ -453,20 +463,20 @@ export default function CompanyJobs({
                     </div>
                   </div>
 
-                  {/* RIGHT: Apply + Request referral */}
-                  <div className="flex flex-col items-end gap-2">
+                  {/* RIGHT: buttons (also don’t shrink) */}
+                  <div className="ml-4 flex flex-shrink-0 flex-col items-end gap-2">
                     {selectedJob.url && (
                       <button
                         type="button"
                         onClick={handleApplySelected}
                         className="
-      btn-shine
-      inline-flex items-center justify-center rounded-full 
-      bg-blue-600 px-4 py-2 text-sm font-medium text-white 
-      hover:bg-blue-500
-      transition-all duration-300
-      whitespace-nowrap
-    "
+          btn-shine
+          inline-flex items-center justify-center rounded-full
+          bg-blue-600 px-4 py-2 text-sm font-medium text-white
+          hover:bg-blue-500
+          transition-all duration-300
+          whitespace-nowrap
+        "
                       >
                         Apply on {selectedCompanyName}
                       </button>
@@ -475,12 +485,12 @@ export default function CompanyJobs({
                     <button
                       type="button"
                       className="
-    btn-shine inline-flex items-center justify-center gap-2 rounded-full 
-    bg-amber-400 px-4 py-2 text-sm font-medium text-gray-900
-    hover:bg-amber-300
-    transition-all duration-300
-    whitespace-nowrap
-  "
+        btn-shine inline-flex items-center justify-center gap-2 rounded-full
+        bg-amber-400 px-4 py-2 text-sm font-medium text-gray-900
+        hover:bg-amber-300
+        transition-all duration-300
+        whitespace-nowrap
+      "
                     >
                       <img
                         src="/images/coins.png"
@@ -490,8 +500,37 @@ export default function CompanyJobs({
                       Request Referral
                     </button>
                   </div>
-
                 </header>
+
+                {/* Transparency Summary */}
+                <div
+                  className="
+    mb-6 rounded-2xl border border-gray-800 
+    bg-gradient-to-br from-slate-900/70 to-slate-800/40
+    p-5 shadow-lg shadow-black/30
+    relative overflow-hidden
+  "
+                >
+                  {/* Accent left border */}
+                  <div className="absolute left-0 top-0 h-full w-1.5 bg-blue-500/60 rounded-l-2xl"></div>
+
+                  {/* Soft highlight */}
+                  <div className="absolute inset-0 pointer-events-none 
+                  bg-gradient-to-br from-white/5 to-transparent"></div>
+
+                  <h3 className="text-sm font-semibold text-gray-100 mb-3 flex items-center gap-2">
+                    <span className="h-2 w-2 rounded-full bg-blue-400 animate-pulse"></span>
+                    Transparency Summary
+                  </h3>
+
+                  <ul className="space-y-1.5 text-[13px] text-gray-300">
+                    <li><span className="font-medium text-gray-100">Response time:</span> 3–7 days</li>
+                    <li><span className="font-medium text-gray-100">Response rate:</span> ~42%</li>
+                    <li><span className="font-medium text-gray-100">Interview likelihood:</span> ~12%</li>
+                    <li><span className="font-medium text-gray-100">Offer likelihood:</span> ~2%</li>
+                    <li><span className="font-medium text-gray-100">Job accuracy:</span> High</li>
+                  </ul>
+                </div>
 
                 {/* Description */}
                 <div

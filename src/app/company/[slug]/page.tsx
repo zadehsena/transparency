@@ -83,13 +83,30 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const company = await getCompanyBySlug(slug);
   if (!company) return notFound();
 
+  const PAGE_SIZE = 25;
+
+  // All jobs returned in the CompanyView
+  const allJobs = company.jobs ?? [];
+
+  // Only send the first page down to the client for initial render
+  const initialJobs = allJobs.slice(0, PAGE_SIZE).map((j) => ({
+    id: j.id,
+    title: j.title,
+    location: j.location,
+    postedAt: j.postedAt,                      // already a string in CompanyView
+    url: j.url ?? "",
+    unit: j.unit ?? null,
+    category: j.category ?? null,              // JobCategory | null -> string | null
+    region: j.region ?? null,                  // Region | null -> string | null
+    descriptionHtml: j.descriptionHtml ?? null // full HTML from Greenhouse
+  }));
+
   const openCategories =
     (company.jobCategories ?? []).filter((c) => c.value > 0);
 
   const CATEGORY_BY_LABEL: Record<string, JobCategory> = Object.fromEntries(
     CATEGORY_ORDER.map((key) => [CATEGORY_LABEL[key], key])
   ) as Record<string, JobCategory>;
-
 
   // ✅ Parse active tab safely, including "metrics"
   const rawTab = tab ?? "overview";
@@ -229,17 +246,8 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         {activeTab === "jobs" && (
           <CompanyJobs
             slug={company.slug}
-            initialJobs={company.jobs.map((j) => ({
-              id: j.id,
-              title: j.title,
-              location: j.location,
-              postedAt: j.postedAt,                      // already a string in CompanyView
-              url: j.url ?? "",
-              unit: j.unit ?? null,
-              category: j.category ?? null,              // JobCategory | null -> string | null
-              region: j.region ?? null,                  // Region | null -> string | null
-              descriptionHtml: j.descriptionHtml ?? null // 👈 full HTML from Greenhouse
-            }))}
+            initialJobs={initialJobs}
+            pageSize={PAGE_SIZE}
             buStats={company.businessUnits}
             overall={{
               overallResponseRate: company.kpis.overallResponseRate,
@@ -253,8 +261,11 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               unit: unit ?? "",
               q: q ?? "",
             }}
+            // Hide "Load more" if there aren't more than one page of jobs
+            disableLoadMore={allJobs.length <= PAGE_SIZE}
           />
         )}
+
         {activeTab === "metrics" && (
           <CompanyMetrics
             kpis={company.kpis}
@@ -266,8 +277,8 @@ export default async function CompanyPage({ params, searchParams }: Props) {
           />
         )}
 
-        {activeTab === "myapps" && (
-          session?.user?.email ? (
+        {activeTab === "myapps" &&
+          (session?.user?.email ? (
             <CompanyMyApplications
               slug={company.slug}
               name={company.name}
@@ -278,8 +289,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             <div className="mt-4 rounded-2xl border bg-white p-6 text-sm text-gray-600 dark:border-gray-800 dark:bg-gray-900 dark:text-gray-300">
               Sign in to see your applications at {company.name}.
             </div>
-          )
-        )}
+          ))}
       </div>
 
       {/* Overview layout */}
@@ -291,12 +301,12 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               <CompanySummary
                 name={company.name}
                 hqCity={company.hqCity}
-                hqCountry={company.hqCountry}          // ✅ NEW
+                hqCountry={company.hqCountry}
                 employeesLow={company.employeesLow}
                 employeesHigh={company.employeesHigh}
                 foundedYear={company.foundedYear}
                 domain={domain}
-                industry={company.industry}           // ✅ NEW
+                industry={company.industry}
                 linkedinUrl={company.linkedinUrl}
                 twitterUrl={company.twitterUrl}
               />
