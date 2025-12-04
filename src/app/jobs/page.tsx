@@ -70,7 +70,7 @@ export default async function JobsIndex({
     <main className="mx-auto max-w-6xl px-6 py-10">
       <header className="mb-6">
         <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100">
-          All open jobs
+          All Open Jobs
         </h1>
         <p className="mt-2 text-gray-600 dark:text-gray-400">
           Use the filters below to narrow down by location, category, and more.

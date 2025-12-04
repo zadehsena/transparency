@@ -44,6 +44,7 @@ async function getTrending(limit = 5, windowDays = 7) {
   const since = new Date(Date.now() - windowDays * msDay);
   const prevSince = new Date(since.getTime() - windowDays * msDay);
 
+  // 1) Current window search counts
   const rows = await prisma.searchEvent.groupBy({
     by: ["slug"],
     where: { createdAt: { gte: since } },
@@ -52,15 +53,74 @@ async function getTrending(limit = 5, windowDays = 7) {
     take: limit,
   });
 
+  // 2) Previous window search counts (for trend)
   const prevRows = await prisma.searchEvent.groupBy({
     by: ["slug"],
     where: { createdAt: { gte: prevSince, lt: since } },
     _count: { slug: true },
   });
 
-  const prevMap = new Map(prevRows.map(r => [r.slug, r._count.slug]));
+  const prevMap = new Map(
+    prevRows.map((r) => [r.slug, r._count?.slug ?? 0]) // guard _count
+  );
 
-  const slugs = rows.map(r => r.slug);
+  const slugs = rows.map((r) => r.slug);
+
+  // 3) 7-day applications per company (via Application -> Job -> Company)
+  const recentApps = await prisma.application.findMany({
+    where: {
+      createdAt: { gte: since },
+      job: {
+        // 👇 adjust relation names if needed
+        companyRel: {
+          slug: { in: slugs },
+        },
+      },
+    },
+    select: {
+      id: true,
+      job: {
+        select: {
+          companyRel: {
+            select: { slug: true },
+          },
+        },
+      },
+    },
+  });
+
+  const appsMap = new Map<string, number>();
+  for (const a of recentApps) {
+    const slug = a.job?.companyRel?.slug;
+    if (!slug) continue;
+    appsMap.set(slug, (appsMap.get(slug) ?? 0) + 1);
+  }
+
+  // 4) 7-day new jobs per company (via Job -> Company)
+  const recentJobs = await prisma.job.findMany({
+    where: {
+      postedAt: { gte: since },
+      closed: false, // keep if you only care about open roles
+      companyRel: {
+        slug: { in: slugs },
+      },
+    },
+    select: {
+      id: true,
+      companyRel: {
+        select: { slug: true },
+      },
+    },
+  });
+
+  const jobsMap = new Map<string, number>();
+  for (const j of recentJobs) {
+    const slug = j.companyRel?.slug;
+    if (!slug) continue;
+    jobsMap.set(slug, (jobsMap.get(slug) ?? 0) + 1);
+  }
+
+  // 5) Company + BU metrics (existing logic)
   const companies = await prisma.company.findMany({
     where: { slug: { in: slugs } },
     include: { businessUnits: true },
@@ -68,15 +128,15 @@ async function getTrending(limit = 5, windowDays = 7) {
 
   return rows
     .map((r) => {
-      const company = companies.find(c => c.slug === r.slug);
+      const company = companies.find((c) => c.slug === r.slug);
       if (!company) return null;
 
-      // 👉 thresholds + trend logic goes here
-      const MIN_PREV = 1;        // was 3
-      const MIN_DELTA = 1;       // was 3
-      const MIN_PCT = 0.10;      // was 0.20
+      // trend thresholds
+      const MIN_PREV = 1;
+      const MIN_DELTA = 1;
+      const MIN_PCT = 0.1;
 
-      const curr = r._count.slug;
+      const curr = r._count?.slug ?? 0;
       const prev = prevMap.get(r.slug) ?? 0;
 
       let trendSearches: Trend = "flat";
@@ -90,19 +150,36 @@ async function getTrending(limit = 5, windowDays = 7) {
           trendSearches = "down";
         }
       } else if (prev === 0 && curr >= 5) {
-        // treat clear breakouts from zero as "up" (tune 5 → 3/7 as you like)
         trendSearches = "up";
       }
 
-      const totalApps = company.businessUnits.reduce((s, bu) => s + (bu.applications ?? 0), 0);
-      const totalResponses = company.businessUnits.reduce((s, bu) => s + (bu.responses ?? 0), 0);
-      const overallResponseRate = totalApps > 0 ? Math.round((totalResponses / totalApps) * 100) : 0;
+      const totalApps = company.businessUnits.reduce(
+        (s, bu) => s + (bu.applications ?? 0),
+        0
+      );
+      const totalResponses = company.businessUnits.reduce(
+        (s, bu) => s + (bu.responses ?? 0),
+        0
+      );
+      const overallResponseRate =
+        totalApps > 0 ? Math.round((totalResponses / totalApps) * 100) : 0;
 
-      const withMedians = company.businessUnits.filter(b => b.medianResponseDays != null);
+      const withMedians = company.businessUnits.filter(
+        (b) => b.medianResponseDays != null
+      );
       const medianResponseDays =
         withMedians.length > 0
-          ? Math.round(withMedians.reduce((s, bu) => s + (bu.medianResponseDays || 0), 0) / withMedians.length)
+          ? Math.round(
+            withMedians.reduce(
+              (s, bu) => s + (bu.medianResponseDays || 0),
+              0
+            ) / withMedians.length
+          )
           : 0;
+
+      // 👇 Use the JS-aggregated maps
+      const applications7d = appsMap.get(company.slug) ?? 0;
+      const newJobs7d = jobsMap.get(company.slug) ?? 0;
 
       return {
         slug: company.slug,
@@ -111,6 +188,8 @@ async function getTrending(limit = 5, windowDays = 7) {
         overallResponseRate,
         totalApplications: totalApps,
         medianResponseDays,
+        applications7d,
+        newJobs7d,
         trendSearches,
         trendOverall: "flat" as Trend,
         trendApps: "flat" as Trend,
@@ -289,13 +368,27 @@ export default async function HomePage() {
               {trending.map((it) => (
                 <li key={it.slug} className="py-3">
                   <Link href={`/company/${it.slug}`} className="block">
-                    <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
+                    <div className="flex items-center justify-between gap-3">
+                      {/* Left: logo + name + trend */}
                       <div className="flex min-w-0 items-center gap-2">
                         <TrendIcon t={it.trendSearches} className="mx-2" />
                         <CompanyLogo slug={it.slug} name={it.name} size={18} />
-                        <div className="truncate font-medium text-gray-900 dark:text-gray-100">
+                        <div className="truncate font-medium text-gray-100">
                           {it.name}
                         </div>
+                      </div>
+
+                      {/* Right: pill stats */}
+                      <div className="flex flex-wrap justify-end gap-2 text-[11px]">
+                        <span className="rounded-full bg-sky-500/10 px-2 py-1 font-medium text-sky-300">
+                          {it.searches7d} searches
+                        </span>
+                        <span className="rounded-full bg-amber-500/10 px-2 py-1 font-medium text-amber-300">
+                          {it.applications7d} apps
+                        </span>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-1 font-medium text-emerald-300">
+                          {it.newJobs7d} new jobs
+                        </span>
                       </div>
                     </div>
                   </Link>
@@ -325,6 +418,8 @@ export default async function HomePage() {
                   <Link href={`/company/${it.slug}`} className="block">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2">
+                        {/* Trend icon – currently flat, can wire to real trend later */}
+                        <TrendIcon t="flat" className="mx-2" />
                         <CompanyLogo slug={it.slug} name={it.name} size={18} />
                         <div className="truncate font-medium text-gray-900 dark:text-gray-100">
                           {it.name}
@@ -348,13 +443,21 @@ export default async function HomePage() {
       {/* NEWEST JOBS – full width, compact rows */}
       {newestJobs.length > 0 && (
         <div className="mt-8 rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
-          <div className="mb-1 text-lg font-bold text-white">
-            Newest job openings
-          </div>
-          <p className="mb-4 text-xs text-gray-400">
-            The 5 most recently posted roles.
-          </p>
+          <div className="mb-4 flex items-center justify-between">
+            <div>
+              <div className="text-lg font-bold text-white">Newest job openings</div>
+              <p className="text-xs text-gray-400">
+                The 5 most recently posted roles.
+              </p>
+            </div>
 
+            <Link
+              href="/jobs"
+              className="rounded-lg bg-gray-800 px-3 py-1.5 text-xs font-medium text-gray-200 hover:bg-gray-700 dark:bg-gray-700 dark:hover:bg-gray-600"
+            >
+              View all →
+            </Link>
+          </div>
           <ul className="space-y-2">
             {newestJobs.map((job) => {
               // pretty date (from ISO string)
