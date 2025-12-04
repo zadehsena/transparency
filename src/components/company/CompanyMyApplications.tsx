@@ -8,7 +8,6 @@ import ApplicationsSankey from "@/components/ApplicationsSankey";
 type StatusKey = "clicked" | "applied" | "interview" | "offer" | "rejected";
 
 type CompanyMyApplicationsProps = {
-    slug: string;
     name: string;
     stats?: {
         applied: number;
@@ -59,7 +58,6 @@ function statusLabel(status: StatusKey) {
 }
 
 export default function CompanyMyApplications({
-    slug,
     name,
     stats,
     applications,

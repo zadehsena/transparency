@@ -1,7 +1,7 @@
 // src/app/jobs/page.tsx — ALL JOBS, PAGINATED
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
-import CompanyJobs from "@/components/CompanyJobs";
+import CompanyJobs from "@/components/company/CompanyJobs";
 
 export const dynamic = "force-dynamic";
 
@@ -10,9 +10,11 @@ const PAGE_SIZE = 25;
 export default async function JobsIndex({
   searchParams,
 }: {
-  searchParams?: { page?: string };
+  searchParams?: Promise<{ page?: string }>;
 }) {
-  const pageParam = searchParams?.page;
+  const sp = searchParams ? await searchParams : {};
+  const pageParam = sp.page;
+
   const parsed = pageParam ? Number(pageParam) : 1;
   const page = Number.isFinite(parsed) && parsed > 0 ? parsed : 1;
 
@@ -55,10 +57,7 @@ export default async function JobsIndex({
     id: j.id,
     title: j.title,
     location: j.location ?? "",
-    postedAt:
-      j.postedAt instanceof Date
-        ? j.postedAt.toISOString()
-        : (j.postedAt as any),
+    postedAt: j.postedAt.toISOString(),
     url: j.url ?? undefined,
     category: j.category ?? undefined,
     region: j.region ?? undefined,

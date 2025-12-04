@@ -291,7 +291,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               Referrals
             </h2>
             <p className="text-gray-400">
-              Referral marketplace coming soon — you'll be able to request and offer referrals for roles at {company.name}.
+              Referral marketplace coming soon — you&apos;ll be able to request and offer referrals for roles at {company.name}.
             </p>
           </div>
         )}
@@ -299,7 +299,6 @@ export default async function CompanyPage({ params, searchParams }: Props) {
         {activeTab === "myapps" &&
           (session?.user?.email ? (
             <CompanyMyApplications
-              slug={company.slug}
               name={company.name}
               stats={myCompanyStats}
               applications={myCompanyApplications}
@@ -318,11 +317,8 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             {/* Left: Company overview + Job postings chart */}
             <div className="lg:col-span-3 flex flex-col gap-8">
               <CompanySummary
-                name={company.name}
                 hqCity={company.hqCity}
                 hqCountry={company.hqCountry}
-                employeesLow={company.employeesLow}
-                employeesHigh={company.employeesHigh}
                 foundedYear={company.foundedYear}
                 domain={domain}
                 industry={company.industry}

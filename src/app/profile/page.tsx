@@ -53,6 +53,23 @@ type Application = {
   firstResponseAt?: string; // ISO (optional)
 };
 
+type RawApplication = {
+  id: string;
+  status: Application["status"];
+  submittedAt?: string | null;
+  createdAt: string;
+  firstResponseAt?: string | null;
+  job?: {
+    company?: string | null;
+    title?: string | null;
+    url?: string | null;
+  } | null;
+};
+
+type ApplicationsApiResponse = {
+  applications?: RawApplication[];
+};
+
 const APPLICATION_STATUSES: Application["status"][] = [
   "clicked",
   "applied",
@@ -174,19 +191,18 @@ function ProfileContent() {
         if (!aRes.ok) throw new Error(await aRes.text());
 
         const p = (await pRes.json()) as Profile;
-        const raw = await aRes.json();
+        const raw = (await aRes.json()) as ApplicationsApiResponse;
 
-        // raw.applications is an array of Application records with `job` included
-        const rawApps: any[] = Array.isArray(raw?.applications) ? raw.applications : [];
+        const rawApps = Array.isArray(raw.applications) ? raw.applications : [];
 
         const a: Application[] = rawApps.map((app) => ({
           id: app.id,
           company: app.job?.company ?? "—",
           title: app.job?.title ?? "—",
-          status: app.status as Application["status"],
-          appliedAt: (app.submittedAt ?? app.createdAt) as string,
+          status: app.status,
+          appliedAt: app.submittedAt ?? app.createdAt,
           url: app.job?.url ?? undefined,
-          firstResponseAt: (app.firstResponseAt ?? undefined) as string | undefined,
+          firstResponseAt: app.firstResponseAt ?? undefined,
         }));
 
         if (!active) return;

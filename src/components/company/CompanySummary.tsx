@@ -16,22 +16,16 @@ function fmtHeadquarters(city?: string | null, country?: string | null) {
 }
 
 export default function CompanySummary({
-    name,
     hqCity,
     hqCountry,
-    employeesLow,
-    employeesHigh,
     foundedYear,
     domain,
     industry,
     linkedinUrl,
     twitterUrl,
 }: {
-    name: string;
     hqCity?: string | null;
     hqCountry?: string | null;
-    employeesLow?: number | null;
-    employeesHigh?: number | null;
     foundedYear?: number | null;
     domain?: string | null;
     industry?: string | null;
@@ -99,9 +93,6 @@ export default function CompanySummary({
                 <div className="rounded-lg border border-gray-800 p-3">
                     <div className="text-xs uppercase tracking-wide text-gray-400">
                         Employees
-                    </div>
-                    <div className="text-sm text-gray-200">
-                        {fmtEmployees(employeesLow, employeesHigh)}
                     </div>
                 </div>
 

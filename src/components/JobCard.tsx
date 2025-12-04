@@ -1,7 +1,6 @@
 // src/components/JobCard.tsx
 "use client";
 
-import { openAuthModal } from "@/lib/authModal";
 import CompanyLogo from "@/components/company/CompanyLogo";
 import Link from "next/link";
 

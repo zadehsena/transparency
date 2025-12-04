@@ -10,8 +10,6 @@ export type CompanyView = {
   medianResponseDays: number | null;
 
   // --- New facts ---
-  employeesLow?: number | null;
-  employeesHigh?: number | null;
   medianBaseSalaryUSD?: number | null;
   medianTCSalaryUSD?: number | null;
   foundedYear?: number | null;
@@ -193,8 +191,6 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     name: company.name,
     medianResponseDays: company.medianResponseDays,
 
-    employeesLow: company.employeesLow ?? null,
-    employeesHigh: company.employeesHigh ?? null,
     foundedYear: company.foundedYear ?? null,
     hqCity: company.hqCity ?? null,
 

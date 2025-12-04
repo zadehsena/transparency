@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import { openAuthModal } from "@/lib/authModal";
 import JobCard, { type JobCardJob, type JobCardStats } from "@/components/JobCard";
 import CompanyLogo from "@/components/company/CompanyLogo";
+import Image from "next/image";
 
 export type Job = {
   id: string;
@@ -492,9 +493,11 @@ export default function CompanyJobs({
         whitespace-nowrap
       "
                     >
-                      <img
+                      <Image
                         src="/images/coins.png"
                         alt="coins"
+                        width={16}
+                        height={16}
                         className="h-4 w-4"
                       />
                       Request Referral
