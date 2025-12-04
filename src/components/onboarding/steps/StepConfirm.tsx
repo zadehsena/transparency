@@ -20,59 +20,6 @@ export default function StepConfirm() {
         <div className="space-y-6">
             <div>
                 <h2 className="mb-2 text-xl font-semibold">You’re all set 🎉</h2>
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                    Here’s a quick summary before finishing your setup.
-                </p>
-            </div>
-
-            <div className="space-y-4">
-                {/* Name */}
-                {(data.firstName || data.lastName) && (
-                    <SummaryCard title="Name">
-                        {data.firstName} {data.lastName}
-                    </SummaryCard>
-                )}
-
-                {/* Location */}
-                {data.location && (
-                    <SummaryCard title="Location">
-                        {data.location}
-                    </SummaryCard>
-                )}
-
-                {/* Interests */}
-                {data.interests?.length ? (
-                    <SummaryCard title="Interests">
-                        {data.interests.join(", ")}
-                    </SummaryCard>
-                ) : null}
-
-                {/* Level */}
-                {data.level && (
-                    <SummaryCard title="Experience Level">
-                        {data.level.charAt(0).toUpperCase() + data.level.slice(1)}
-                    </SummaryCard>
-                )}
-
-                {/* Education */}
-                {data.education && (
-                    <SummaryCard title="Education">
-                        {(data.education.degree || "") +
-                            (data.education.field ? ` in ${data.education.field}` : "")}
-                        <br />
-                        {data.education.school}
-                        {data.education.graduationYear
-                            ? ` (${data.education.graduationYear})`
-                            : ""}
-                    </SummaryCard>
-                )}
-
-                {/* Job */}
-                {data.job && (
-                    <SummaryCard title="Current Role">
-                        {data.job.title || "—"} at {data.job.company || "—"}
-                    </SummaryCard>
-                )}
             </div>
 
             <div className="flex gap-2">

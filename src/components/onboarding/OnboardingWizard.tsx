@@ -4,14 +4,14 @@
 import Image from "next/image";
 import { AnimatePresence, motion } from "framer-motion";
 import { OnboardingProvider, useOnboarding } from "./OnboardingContext";
-import StepName from "./steps/StepName";
-import StepBirthdate from "./steps/StepBirthdate";
+import StepName from "./steps/StepNameBirthdate";
 import StepLocation from "./steps/StepLocation";
 import StepInterests from "./steps/StepInterests";
 import StepLevel from "./steps/StepLevel";
 import StepEducation from "./steps/StepEducation";
 import StepCurrentJob from "./steps/StepCurrentJob";
 import StepConfirm from "./steps/StepConfirm";
+import StepNameBirthdate from "./steps/StepNameBirthdate";
 
 function Frame({ children }: { children: React.ReactNode }) {
     const { step, total, next } = useOnboarding();
@@ -72,7 +72,7 @@ function Frame({ children }: { children: React.ReactNode }) {
                     <div className="hidden bg-gray-900 text-white md:block md:w-1/2">
                         <div className="relative h-full w-full min-h-[360px]">
                             <Image
-                                src="/images/void.png"
+                                src="/images/ID.png"
                                 alt="Job search and applications"
                                 fill
                                 className="object-cover opacity-90"
@@ -98,13 +98,12 @@ function Frame({ children }: { children: React.ReactNode }) {
 function Steps() {
     const { step } = useOnboarding();
 
-    if (step === 1) return <StepName />;
-    if (step === 2) return <StepBirthdate />;
-    if (step === 3) return <StepLocation />;
-    if (step === 4) return <StepInterests />;
-    if (step === 5) return <StepLevel />;
-    if (step === 6) return <StepEducation />;
-    if (step === 7) return <StepCurrentJob />;
+    if (step === 1) return <StepNameBirthdate />;
+    if (step === 2) return <StepLocation />;
+    if (step === 3) return <StepInterests />;
+    if (step === 4) return <StepLevel />;
+    if (step === 5) return <StepEducation />;
+    if (step === 6) return <StepCurrentJob />;
     return <StepConfirm />;
 }
 
