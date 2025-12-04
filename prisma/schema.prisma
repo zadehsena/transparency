@@ -46,8 +46,7 @@ model Company {
   totalApplications   Int?
 
   // Size & basics
-  employeesLow        Int?
-  employeesHigh       Int?
+  employees Int?
   foundedYear         Int?
   industry            String?
 

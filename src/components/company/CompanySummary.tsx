@@ -43,8 +43,8 @@ export default function CompanySummary({
 
     // For now: everything falls back to website so all icons show
     const websiteHref = website || "#";
-    const linkedinHref = linkedinUrl || websiteHref;
-    const twitterHref = twitterUrl || websiteHref;
+    const linkedinHref = linkedinUrl || "#";
+    const twitterHref = twitterUrl || "#";
 
     return (
         <section className="relative rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">

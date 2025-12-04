@@ -1,16 +1,12 @@
-// src/components/CompanyTabs.tsx
 "use client";
 
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import clsx from "clsx";
 
-export type CompanyTabKey = "overview" | "metrics" | "jobs" | "myapps";
+// ✅ add "referrals"
+export type CompanyTabKey = "overview" | "metrics" | "jobs" | "myapps" | "referrals";
 
-export default function CompanyTabs({
-  active,
-}: {
-  active: CompanyTabKey;
-}) {
+export default function CompanyTabs({ active }: { active: CompanyTabKey }) {
   const router = useRouter();
   const pathname = usePathname();
   const search = useSearchParams();
@@ -27,6 +23,7 @@ export default function CompanyTabs({
     { key: "jobs", label: "Job Listings" },
     { key: "metrics", label: "Metrics" },
     { key: "myapps", label: "My Applications" },
+    { key: "referrals", label: "Referrals" },
   ];
 
   return (
@@ -38,9 +35,26 @@ export default function CompanyTabs({
             onClick={() => setTab(key)}
             className={clsx(
               "relative px-5 py-3 text-base font-medium transition-colors duration-150 rounded-t-lg",
-              active === key
-                ? "text-gray-200 border-b-2 border-gray-400 bg-gray-800/50"
-                : "text-gray-400 hover:text-white hover:bg-gray-800/30"
+
+              // ACTIVE (non-referrals)
+              active === key &&
+              key !== "referrals" &&
+              "text-gray-200 border-b-2 border-gray-400 bg-gray-800/50",
+
+              // ACTIVE REFERRALS — bright gold highlight
+              active === key &&
+              key === "referrals" &&
+              "text-amber-300 border-b-2 border-amber-400 bg-gray-800/40 shadow-[0_0_18px_rgba(255,200,0,0.5)]",
+
+              // INACTIVE REFERRALS — faint gold tint
+              active !== key &&
+              key === "referrals" &&
+              "text-amber-200/80 hover:text-amber-300 hover:bg-gray-800/20 shadow-[0_0_6px_rgba(255,200,0,0.15)]",
+
+              // INACTIVE regular tabs
+              active !== key &&
+              key !== "referrals" &&
+              "text-gray-400 hover:text-white hover:bg-gray-800/30"
             )}
           >
             {label}

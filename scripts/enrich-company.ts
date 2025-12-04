@@ -48,16 +48,11 @@ async function fetchAbstractCompany(domain: string): Promise<AbstractCompany | n
     }
 }
 
-function buildEmployeeRange(count: number | null) {
-    if (!count) return { low: null, high: null };
-
-    const magnitude = Math.pow(10, Math.max(1, Math.floor(Math.log10(count)) - 1));
-
-    return {
-        low: Math.floor(count / magnitude) * magnitude,
-        high: Math.ceil(count / magnitude) * magnitude,
-    };
+function roundEmployees(count: number | null): number | null {
+    if (!count) return null;
+    return Math.round(count / 100) * 100;
 }
+
 
 function ensureHttps(url: string | null | undefined): string | null {
     if (!url) return null;
@@ -83,15 +78,7 @@ async function enrichOne(slug: string, domain: string) {
         return;
     }
 
-    const employeeRange = buildEmployeeRange(data.employee_count);
-
-    let isPublic: boolean | null = company.isPublic ?? null;
-    if (isPublic === null) {
-        const type = data.type?.toLowerCase();
-        if (type === "public") isPublic = true;
-        else if (type === "private") isPublic = false;
-        else if (data.ticker || data.exchange) isPublic = true;
-    }
+    const roundedEmployees = roundEmployees(data.employee_count);
 
     // 🔢 Safely parse founded year to Int (or null)
     const foundedYear =
@@ -126,28 +113,23 @@ async function enrichOne(slug: string, domain: string) {
             foundedYear,
             industry: company.industry ?? data.industry ?? null,
 
-            employeesLow: company.employeesLow ?? employeeRange.low,
-            employeesHigh: company.employeesHigh ?? employeeRange.high,
+            // single employees field, rounded to nearest 100
+            employees: company.employees ?? roundedEmployees,
 
-            revenueUSD: company.revenueUSD ?? safeRevenue,
-
+            // domain + website
             domain: company.domain ?? data.domain ?? domain,
             website:
                 company.website ??
                 (data.domain ? `https://${data.domain}` : `https://${domain}`),
 
-            // socials
+            // socials (already doing what you want)
             linkedinUrl:
                 company.linkedinUrl ?? ensureHttps(data.linkedin_url ?? null),
             twitterUrl:
                 company.twitterUrl ?? ensureHttps(data.twitter_url ?? null),
-
-            isPublic,
-            stockTicker: company.stockTicker ?? data.ticker ?? null,
-            stockExchange: company.stockExchange ?? data.exchange ?? null,
-            // fundingSummary & ceoName are not provided by Abstract → leave untouched
         },
     });
+
 
     console.log(`✅ Updated ${slug}`);
 }

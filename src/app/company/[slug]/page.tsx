@@ -114,10 +114,13 @@ export default async function CompanyPage({ params, searchParams }: Props) {
     CATEGORY_ORDER.map((key) => [CATEGORY_LABEL[key], key])
   ) as Record<string, JobCategory>;
 
-  // ✅ Parse active tab safely, including "metrics"
+  // ✅ Parse active tab safely, including "metrics" + "referrals"
   const rawTab = tab ?? "overview";
   const activeTab: CompanyTabKey =
-    rawTab === "jobs" || rawTab === "myapps" || rawTab === "metrics"
+    rawTab === "jobs" ||
+      rawTab === "myapps" ||
+      rawTab === "metrics" ||
+      rawTab === "referrals"
       ? (rawTab as CompanyTabKey)
       : "overview";
 
@@ -267,7 +270,6 @@ export default async function CompanyPage({ params, searchParams }: Props) {
               unit: unit ?? "",
               q: q ?? "",
             }}
-            // Hide "Load more" if there aren't more than one page of jobs
             disableLoadMore={allJobs.length <= PAGE_SIZE}
           />
         )}
@@ -281,6 +283,17 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             jobCategories={company.jobCategories}
             jobRegions={company.jobRegions}
           />
+        )}
+
+        {activeTab === "referrals" && (
+          <div className="rounded-2xl border border-gray-800 bg-slate-950 p-6 text-sm text-gray-200">
+            <h2 className="mb-3 text-lg font-semibold">
+              Referrals
+            </h2>
+            <p className="text-gray-400">
+              Referral marketplace coming soon — you'll be able to request and offer referrals for roles at {company.name}.
+            </p>
+          </div>
         )}
 
         {activeTab === "myapps" &&

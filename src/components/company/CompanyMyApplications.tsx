@@ -2,6 +2,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import ApplicationsSankey from "@/components/ApplicationsSankey";
 
 type StatusKey = "clicked" | "applied" | "interview" | "offer" | "rejected";
@@ -63,6 +64,8 @@ export default function CompanyMyApplications({
     stats,
     applications,
 }: CompanyMyApplicationsProps) {
+    const router = useRouter();
+
     const s = stats ?? {
         applied: 0,
         rejected: 0,
@@ -115,13 +118,23 @@ export default function CompanyMyApplications({
 
     return (
         <div className="rounded-2xl border bg-white p-4 sm:p-6 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-            <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-baseline sm:justify-between">
+            <div className="mb-4 flex flex-col gap-2 sm:flex-row sm:items-baseline sm:justify-between">
                 <h2 className="text-base font-semibold text-gray-900 dark:text-gray-100">
                     My application stats at {name}
                 </h2>
-                <p className="text-xs text-gray-500 dark:text-gray-400">
-                    Company: <span className="font-mono text-[11px]">{slug}</span>
-                </p>
+                <button
+                    type="button"
+                    onClick={() => router.push("/profile?tab=applications")}
+                    className="
+    inline-flex items-center justify-center
+    rounded-lg border border-gray-700 bg-gray-800/40
+    px-4 py-2 text-xs font-medium text-gray-200
+    hover:bg-gray-700/40 hover:border-gray-600
+    transition
+  "
+                >
+                    View all my applications
+                </button>
             </div>
 
             {/* Stat blocks */}
