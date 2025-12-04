@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import CompanyLogo from "@/components/company/CompanyLogo";
+import LoginButton from "@/components/LoginButton";
 
 export const revalidate = 60; // cache for 1 minute
 
@@ -256,12 +257,9 @@ export default async function HomePage() {
             >
               Jobs
             </Link>
-            <Link
-              href="/login"
-              className="rounded-lg border px-5 py-3 text-gray-800 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800/60"
-            >
+            <LoginButton>
               Log In
-            </Link>
+            </LoginButton>
           </div>
           <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">No credit card. Free to try.</p>
         </div>
