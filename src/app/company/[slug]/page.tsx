@@ -324,6 +324,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
                 industry={company.industry}
                 linkedinUrl={company.linkedinUrl}
                 twitterUrl={company.twitterUrl}
+                employees={company.employees}
               />
 
               {/* 🔹 Open roles by category */}

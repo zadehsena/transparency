@@ -23,6 +23,7 @@ export default function CompanySummary({
     industry,
     linkedinUrl,
     twitterUrl,
+    employees,
 }: {
     hqCity?: string | null;
     hqCountry?: string | null;
@@ -31,6 +32,7 @@ export default function CompanySummary({
     industry?: string | null;
     linkedinUrl?: string | null;
     twitterUrl?: string | null;
+    employees?: number | null;
 }) {
     const website =
         domain && !/^https?:\/\//i.test(domain) ? `https://${domain}` : domain || "";
@@ -93,6 +95,9 @@ export default function CompanySummary({
                 <div className="rounded-lg border border-gray-800 p-3">
                     <div className="text-xs uppercase tracking-wide text-gray-400">
                         Employees
+                    </div>
+                    <div className="text-sm text-gray-200">
+                        {employees ? employees.toLocaleString() : "—"}
                     </div>
                 </div>
 

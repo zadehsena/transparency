@@ -17,11 +17,11 @@ export type CompanyView = {
   linkedinUrl?: string | null;
   twitterUrl?: string | null;
 
-  // ⭐ Add these:
   hqCountry?: string | null;
   industry?: string | null;
   website?: string | null;
   domain?: string | null;
+  employees?: number | null;
 
   businessUnits: {
     name: string;
@@ -200,6 +200,7 @@ export async function getCompanyBySlug(slug: string): Promise<CompanyView | null
     domain: company.domain ?? null,
     linkedinUrl: company.linkedinUrl ?? null,
     twitterUrl: company.twitterUrl ?? null,
+    employees: company.employees,
 
     businessUnits,
     jobs,
