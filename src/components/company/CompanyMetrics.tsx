@@ -2,6 +2,13 @@
 
 import CompanyJobPostingsChart, { type Point } from "@/components/company/CompanyJobPostingsChart";
 import CompanyJobCategoryPieChart from "@/components/company/CompanyJobCategoryPieChart";
+import ApplicationsSankey from "@/components/ApplicationsSankey";
+
+type StatusKey = "clicked" | "applied" | "interview" | "offer" | "rejected";
+
+type CompanySankeyApp = {
+    status: StatusKey;
+};
 
 type KPI = {
     overallResponseRate: number | null;
@@ -27,6 +34,7 @@ export default function CompanyMetrics({
     monthly,
     jobCategories,
     jobRegions,
+    applications
 }: {
     kpis: KPI | null;
     businessUnits: BUStat[];
@@ -34,10 +42,21 @@ export default function CompanyMetrics({
     monthly?: Point[];
     jobCategories: { name: string; value: number }[];
     jobRegions: { name: string; value: number }[];
+    applications?: CompanySankeyApp[];
 }) {
 
     return (
         <div className="space-y-10">
+            {/* company-wide applications Sankey */}
+            {applications && applications.length > 0 && (
+                <MetricChartCard>
+                    <ApplicationsSankey
+                        apps={applications}
+                        title="Where did applicants end up?"
+                    />
+                </MetricChartCard>
+            )}
+
             {/* ================================
                 4-CHART GRID (2×2)
             ================================= */}
@@ -92,20 +111,6 @@ export default function CompanyMetrics({
                     )}
                 </MetricChartCard>
             </div>
-
-            {/* business unit table unchanged */}
-            {businessUnits?.length > 0 && (
-                <div className="rounded-2xl border bg-white p-4 shadow-sm dark:border-gray-800 dark:bg-gray-900">
-                    <h2 className="mb-3 text-sm font-semibold text-gray-800 dark:text-gray-100">
-                        Business unit performance
-                    </h2>
-                    <div className="overflow-x-auto">
-                        <table className="min-w-full text-sm">
-                            {/* ...rest of your table code exactly as-is */}
-                        </table>
-                    </div>
-                </div>
-            )}
         </div>
     );
 }

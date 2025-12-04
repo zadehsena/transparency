@@ -37,19 +37,8 @@ function TrendIcon({
   );
 }
 
-function StatLine({ value, label, trend = "flat" }: { value: string | number; label: string; trend?: Trend }) {
-  return (
-    <div className="flex items-center whitespace-nowrap text-xs">
-      <TrendIcon t={trend} /> {/* icon first */}
-      <span className="ml-1 font-semibold text-gray-900 dark:text-gray-100">{value}</span>
-      <span className="ml-1 text-gray-600 dark:text-gray-400">{label}</span>
-    </div>
-  );
-}
-
-// ---- data: Most-searched (7d) ----
 // ---- data: Most-searched (window vs prior window) ----
-async function getTrending(limit = 10, windowDays = 7) {
+async function getTrending(limit = 5, windowDays = 7) {
   const msDay = 24 * 60 * 60 * 1000;
   const since = new Date(Date.now() - windowDays * msDay);
   const prevSince = new Date(since.getTime() - windowDays * msDay);
@@ -117,11 +106,11 @@ async function getTrending(limit = 10, windowDays = 7) {
       return {
         slug: company.slug,
         name: company.name,
-        searches7d: curr,       // 👈 optional, lets you show search counts
+        searches7d: curr,
         overallResponseRate,
         totalApplications: totalApps,
         medianResponseDays,
-        trendSearches,          // 👈 return the computed trend
+        trendSearches,
         trendOverall: "flat" as Trend,
         trendApps: "flat" as Trend,
         trendMedianDays: "flat" as Trend,
@@ -130,118 +119,116 @@ async function getTrending(limit = 10, windowDays = 7) {
     .filter((c): c is NonNullable<typeof c> => Boolean(c));
 }
 
-// ---- data: Top responders (window vs prior window) ----
-async function getTopResponders(limit = 10, minApps = 10, windowDays = 90) {
-  const msDay = 24 * 60 * 60 * 1000;
-  const since = new Date(Date.now() - windowDays * msDay);
-  const prevSince = new Date(since.getTime() - windowDays * msDay);
-
-  // Current window apps
-  const apps = await prisma.application.findMany({
-    where: { createdAt: { gte: since } },
+// ---- data: Top transparency-score companies ----
+async function getTopTransparencyCompanies(limit = 5) {
+  const companies = await prisma.company.findMany({
+    where: {
+      transparencyScore: { not: null },
+    },
     select: {
-      status: true,
-      job: {
+      slug: true,
+      name: true,
+      transparencyScore: true,
+    },
+    orderBy: {
+      transparencyScore: "desc",
+    },
+    take: 50, // grab more than we need so we can randomize ties
+  });
+
+  type Row = {
+    slug: string;
+    name: string;
+    transparencyScore: number;
+  };
+
+  const groups = new Map<number, Row[]>();
+  for (const c of companies) {
+    const score = c.transparencyScore!;
+    const arr = groups.get(score) ?? [];
+    arr.push({ slug: c.slug, name: c.name, transparencyScore: score });
+    groups.set(score, arr);
+  }
+
+  function shuffleInPlace<T>(arr: T[]) {
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+  }
+
+  const scores = Array.from(groups.keys()).sort((a, b) => b - a); // high → low
+  const result: Row[] = [];
+
+  outer: for (const score of scores) {
+    const group = groups.get(score)!;
+    shuffleInPlace(group); // randomize only inside the tie group
+
+    for (const row of group) {
+      result.push(row);
+      if (result.length >= limit) break outer;
+    }
+  }
+
+  return result;
+}
+
+type NewestJob = {
+  id: string;
+  title: string;
+  location: string;
+  postedAt: Date;
+  url: string | null;
+  companyName: string;
+  companySlug: string | null;
+};
+
+async function getNewestJobs(limit = 5): Promise<NewestJob[]> {
+  const jobs = await prisma.job.findMany({
+    where: {
+      closed: false,          // optional: only open jobs
+    },
+    orderBy: { postedAt: "desc" },
+    take: limit,
+    select: {
+      id: true,
+      title: true,
+      location: true,
+      postedAt: true,
+      url: true,
+      company: true,          // raw company string
+      companyRel: {
         select: {
-          companyId: true,
-          companyRel: { select: { slug: true, name: true } },
+          name: true,
+          slug: true,
         },
       },
     },
   });
 
-  // Prior window apps (prevSince..since)
-  const prevApps = await prisma.application.findMany({
-    where: { createdAt: { gte: prevSince, lt: since } },
-    select: {
-      status: true,
-      job: {
-        select: {
-          companyId: true,
-          companyRel: { select: { slug: true, name: true } },
-        },
-      },
-    },
-  });
-
-  const curr = new Map<
-    string,
-    { slug: string; name: string; total: number; responded: number }
-  >();
-  const prev = new Map<
-    string,
-    { slug: string; name: string; total: number; responded: number }
-  >();
-
-  for (const a of apps) {
-    const id = a.job?.companyId;
-    const slug = a.job?.companyRel?.slug;
-    const name = a.job?.companyRel?.name;
-    if (!id || !slug || !name) continue;
-    const e = curr.get(id) ?? { slug, name, total: 0, responded: 0 };
-    e.total += 1;
-    if (a.status !== "applied") e.responded += 1;
-    curr.set(id, e);
-  }
-
-  for (const a of prevApps) {
-    const id = a.job?.companyId;
-    const slug = a.job?.companyRel?.slug;
-    const name = a.job?.companyRel?.name;
-    if (!id || !slug || !name) continue;
-    const e = prev.get(id) ?? { slug, name, total: 0, responded: 0 };
-    e.total += 1;
-    if (a.status !== "applied") e.responded += 1;
-    prev.set(id, e);
-  }
-
-  const epsilon = 0.5; // % points needed to count as up/down
-
-  const list = Array.from(curr.entries())
-    .filter(([, e]) => e.total >= minApps)
-    .map(([id, e]) => {
-      const responseRate = Math.round((e.responded / e.total) * 100);
-      const p = prev.get(id);
-      const prevRate = p && p.total > 0 ? Math.round((p.responded / p.total) * 100) : null;
-
-      let trend: Trend = "flat";
-      if (prevRate != null) {
-        if (responseRate > prevRate + epsilon) trend = "up";
-        else if (responseRate < prevRate - epsilon) trend = "down";
-      }
-
-      let appsTrend: Trend = "flat";
-      if (p) {
-        if (e.total > p.total) appsTrend = "up";
-        else if (e.total < p.total) appsTrend = "down";
-      }
-
-      return {
-        slug: e.slug,
-        name: e.name,
-        responseRate,
-        totalApplications: e.total,
-        trendResponse: trend,
-        trendApps: appsTrend,
-      };
-    })
-    .sort(
-      (a, b) =>
-        b.responseRate - a.responseRate ||
-        b.totalApplications - a.totalApplications ||
-        a.name.localeCompare(b.name)
-    );
-
-  return list.slice(0, limit);
+  // flatten into the shape the UI expects
+  return jobs.map((j) => ({
+    id: j.id,
+    title: j.title,
+    location: j.location,
+    postedAt: j.postedAt,
+    url: j.url,
+    companyName: j.companyRel?.name ?? j.company,
+    companySlug: j.companyRel?.slug ?? null,
+  }));
 }
 
 export default async function HomePage() {
-  const [trending, topResponders] = await Promise.all([getTrending(10), getTopResponders(10, 5, 90)]);
+  const [trending, topTransparent, newestJobs] = await Promise.all([
+    getTrending(5),
+    getTopTransparencyCompanies(5),
+    getNewestJobs(5),
+  ]);
 
   return (
-    <section className="mx-auto max-w-6xl px-6 py-16">
+    <section className="mx-auto max-w-6xl px-6 pt-16 pb-0">
       {/* HERO */}
-      <div className="grid items-center gap-4 md:gap-8 md:grid-cols-2">
+      <div className="grid items-center gap-4 md:gap-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.7fr)]">
         <div>
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl leading-snug sm:leading-tight">
             Job applications shouldn’t vanish into the void.
@@ -264,22 +251,20 @@ export default async function HomePage() {
           <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">No credit card. Free to try.</p>
         </div>
 
-        <div className="relative mx-auto w-full max-w-lg">
-          <div className="aspect-[4/3] w-full overflow-hidden rounded-2xl border bg-white shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
-            <Image
-              src="/images/image5.png"
-              alt="Application drifting toward the void"
-              fill
-              priority
-              sizes="(max-width: 768px) 100vw, 520px"
-              className="object-cover"
-            />
-          </div>
+        <div className="relative mx-auto w-full max-w-2xl">
+          <Image
+            src="/images/image6.png"
+            alt="Applicants holding resumes"
+            width={1502}   // actual image size
+            height={811}
+            priority
+            className="w-full h-auto"
+          />
         </div>
       </div>
 
       {/* STATS */}
-      <div className="mt-16 space-y-6">
+      <div className="mt-8 grid grid-cols-1 gap-6 md:grid-cols-2">
         {/* Most searched companies */}
         <div className="rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
           <div className="mb-1 text-lg font-bold text-white">
@@ -290,25 +275,21 @@ export default async function HomePage() {
           </p>
 
           {trending.length === 0 ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400">No searches yet. Try the search bar above.</div>
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              No searches yet. Try the search bar above.
+            </div>
           ) : (
             <ul className="divide-y dark:divide-gray-800/80">
               {trending.map((it) => (
                 <li key={it.slug} className="py-3">
                   <Link href={`/company/${it.slug}`} className="block">
                     <div className="flex flex-col gap-2 md:flex-row md:items-center md:justify-between">
-                      {/* left: logo + name + trend (based on searches) */}
                       <div className="flex min-w-0 items-center gap-2">
                         <TrendIcon t={it.trendSearches} className="mx-2" />
                         <CompanyLogo slug={it.slug} name={it.name} size={18} />
-                        <div className="truncate font-medium text-gray-900 dark:text-gray-100">{it.name}</div>
-                      </div>
-
-                      {/* right: stats */}
-                      <div className="flex basis-full flex-wrap items-center gap-x-4 gap-y-1 text-xs md:basis-auto">
-                        <StatLine value={`${it.overallResponseRate}%`} label="Overall Response" trend={it.trendOverall} />
-                        <StatLine value={it.totalApplications} label="Total Applications" trend={it.trendApps} />
-                        <StatLine value={it.medianResponseDays} label="Median Resp. Days" trend={it.trendMedianDays} />
+                        <div className="truncate font-medium text-gray-900 dark:text-gray-100">
+                          {it.name}
+                        </div>
                       </div>
                     </div>
                   </Link>
@@ -318,32 +299,36 @@ export default async function HomePage() {
           )}
         </div>
 
-        {/* Top response-rate companies */}
+        {/* Top transparency-score companies */}
         <div className="rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
           <div className="mb-1 text-lg font-bold text-white">
-            Top response-rate companies (90 days)
+            Top transparency score companies
           </div>
           <p className="mb-4 text-xs text-gray-400">
-            Applications often feel like they go into the void—this ranks companies by actual reply rate from recent submissions.
+            Ranked by overall transparency score. Ties are shuffled so you don&apos;t always see the same order.
           </p>
 
-          {topResponders.length === 0 ? (
-            <div className="text-sm text-gray-500 dark:text-gray-400">Not enough data yet. Check back soon.</div>
+          {topTransparent.length === 0 ? (
+            <div className="text-sm text-gray-500 dark:text-gray-400">
+              No transparency scores yet. Check back soon.
+            </div>
           ) : (
             <ul className="divide-y dark:divide-gray-800/80">
-              {topResponders.map((it) => (
+              {topTransparent.map((it) => (
                 <li key={it.slug} className="py-3">
                   <Link href={`/company/${it.slug}`} className="block">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2">
                         <CompanyLogo slug={it.slug} name={it.name} size={18} />
-                        <div className="truncate font-medium text-gray-900 dark:text-gray-100">{it.name}</div>
-                        <TrendIcon t={it.trendResponse} />
+                        <div className="truncate font-medium text-gray-900 dark:text-gray-100">
+                          {it.name}
+                        </div>
                       </div>
-
-                      <div className="flex shrink-0 flex-wrap items-center gap-x-6 gap-y-2 text-xs">
-                        <StatLine value={`${it.responseRate}%`} label="Response Rate" trend={it.trendResponse} />
-                        <StatLine value={it.totalApplications} label="Applications (90d)" trend={it.trendApps} />
+                      <div className="flex items-center gap-2 text-xs">
+                        <span className="text-gray-400">Transparency</span>
+                        <span className="rounded-full bg-emerald-500/10 px-2 py-1 text-[11px] font-semibold text-emerald-300">
+                          {it.transparencyScore}/100
+                        </span>
                       </div>
                     </div>
                   </Link>
@@ -353,6 +338,46 @@ export default async function HomePage() {
           )}
         </div>
       </div>
-    </section>
+
+      {/* NEWEST JOBS – full width */}
+      {newestJobs.length > 0 && (
+        <div className="mt-6 rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
+          <div className="mb-1 text-lg font-bold text-white">
+            Newest job openings
+          </div>
+          <p className="mb-4 text-xs text-gray-400">
+            The 5 most recently posted roles.
+          </p>
+
+          <ul className="space-y-3">
+            {newestJobs.map((job) => (
+              <li
+                key={job.id}
+                className="flex items-baseline justify-between gap-4 text-sm"
+              >
+                <div className="min-w-0">
+                  <Link
+                    href={job.url ?? `/company/${job.companySlug ?? ""}`}
+                    className="block truncate font-medium text-gray-900 dark:text-gray-100"
+                  >
+                    {job.title}
+                  </Link>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    {job.companyName} · {job.location}
+                  </div>
+                </div>
+
+                <div className="shrink-0 text-xs text-gray-400">
+                  {new Date(job.postedAt).toLocaleDateString(undefined, {
+                    month: "short",
+                    day: "numeric",
+                  })}
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+    </section >
   );
 }

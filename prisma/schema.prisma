@@ -41,6 +41,7 @@ model Company {
   name                String
 
   // Transparency / stats
+  transparencyScore   Int?
   medianResponseDays  Int?
   overallResponseRate Int?
   totalApplications   Int?

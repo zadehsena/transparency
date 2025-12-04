@@ -146,6 +146,25 @@ export default async function CompanyPage({ params, searchParams }: Props) {
   const weekly = aggregateWeeklyOpenClosed(company.jobs ?? [], 26); // opened vs closed
   const monthly = aggregateMonthlyOpenClosed(company.jobs ?? [], 12);
 
+  // ---- Company-wide applications at this company (all users) ----
+  type SankeyStatus = "clicked" | "applied" | "interview" | "offer" | "rejected";
+
+  const companyApplicationsRaw = await prisma.application.findMany({
+    where: {
+      job: {
+        companyId: company.id,
+      },
+    },
+    select: {
+      status: true,
+    },
+  });
+
+  const companyApplications: { status: SankeyStatus }[] =
+    companyApplicationsRaw.map((a) => ({
+      status: a.status as SankeyStatus,
+    }));
+
   // ---- My applications at this company (for logged-in user) ----
   const session = await getServerSession(authOptions);
 
@@ -282,6 +301,7 @@ export default async function CompanyPage({ params, searchParams }: Props) {
             monthly={monthly}
             jobCategories={company.jobCategories}
             jobRegions={company.jobRegions}
+            applications={companyApplications}
           />
         )}
 
