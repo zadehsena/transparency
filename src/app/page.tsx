@@ -4,6 +4,7 @@ import Link from "next/link";
 import { prisma } from "@/lib/prisma";
 import CompanyLogo from "@/components/company/CompanyLogo";
 import LoginButton from "@/components/LoginButton";
+import JobCard, { type JobCardJob } from "@/components/JobCard";
 
 export const revalidate = 60; // cache for 1 minute
 
@@ -183,10 +184,10 @@ type NewestJob = {
   companySlug: string | null;
 };
 
-async function getNewestJobs(limit = 5): Promise<NewestJob[]> {
+async function getNewestJobs(limit = 5): Promise<JobCardJob[]> {
   const jobs = await prisma.job.findMany({
     where: {
-      closed: false,          // optional: only open jobs
+      closed: false,
     },
     orderBy: { postedAt: "desc" },
     take: limit,
@@ -196,7 +197,12 @@ async function getNewestJobs(limit = 5): Promise<NewestJob[]> {
       location: true,
       postedAt: true,
       url: true,
-      company: true,          // raw company string
+      company: true,
+      businessUnit: {
+        select: {
+          name: true,
+        },
+      },
       companyRel: {
         select: {
           name: true,
@@ -206,13 +212,13 @@ async function getNewestJobs(limit = 5): Promise<NewestJob[]> {
     },
   });
 
-  // flatten into the shape the UI expects
   return jobs.map((j) => ({
     id: j.id,
     title: j.title,
     location: j.location,
-    postedAt: j.postedAt,
-    url: j.url,
+    postedAt: j.postedAt.toISOString(),                 // JobCard expects string
+    url: j.url ?? undefined,
+    unit: j.businessUnit?.name ?? null,
     companyName: j.companyRel?.name ?? j.company,
     companySlug: j.companyRel?.slug ?? null,
   }));
@@ -226,10 +232,10 @@ export default async function HomePage() {
   ]);
 
   return (
-    <section className="mx-auto max-w-6xl px-6 pt-16 pb-0">
+    <section className="mx-auto max-w-6xl px-6 pt-16 pb-10">
       {/* HERO */}
       <div className="grid items-center gap-4 md:gap-8 md:grid-cols-[minmax(0,1.1fr)_minmax(0,1.7fr)]">
-        <div>
+        <div className="pl-4 md:pl-8">
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 dark:text-gray-100 sm:text-5xl leading-snug sm:leading-tight">
             Job applications shouldn’t vanish into the void.
           </h1>
@@ -339,9 +345,9 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* NEWEST JOBS – full width */}
+      {/* NEWEST JOBS – full width, compact rows */}
       {newestJobs.length > 0 && (
-        <div className="mt-6 rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
+        <div className="mt-8 rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80">
           <div className="mb-1 text-lg font-bold text-white">
             Newest job openings
           </div>
@@ -349,32 +355,71 @@ export default async function HomePage() {
             The 5 most recently posted roles.
           </p>
 
-          <ul className="space-y-3">
-            {newestJobs.map((job) => (
-              <li
-                key={job.id}
-                className="flex items-baseline justify-between gap-4 text-sm"
-              >
-                <div className="min-w-0">
-                  <Link
-                    href={job.url ?? `/company/${job.companySlug ?? ""}`}
-                    className="block truncate font-medium text-gray-900 dark:text-gray-100"
-                  >
-                    {job.title}
-                  </Link>
-                  <div className="text-xs text-gray-500 dark:text-gray-400">
-                    {job.companyName} · {job.location}
-                  </div>
-                </div>
+          <ul className="space-y-2">
+            {newestJobs.map((job) => {
+              // pretty date (from ISO string)
+              const postedPretty = new Date(job.postedAt).toLocaleDateString(
+                undefined,
+                { month: "short", day: "numeric", year: "numeric" }
+              );
 
-                <div className="shrink-0 text-xs text-gray-400">
-                  {new Date(job.postedAt).toLocaleDateString(undefined, {
-                    month: "short",
-                    day: "numeric",
-                  })}
-                </div>
-              </li>
-            ))}
+              // shorten multi-location strings like JobCard does
+              let locationDisplay = job.location;
+              if (job.location) {
+                const parts = job.location
+                  .split(";")
+                  .map((p) => p.trim())
+                  .filter(Boolean);
+                if (parts.length > 1) {
+                  locationDisplay = `${parts[0]} and ${parts.length - 1} more`;
+                }
+              }
+
+              const slug =
+                job.companySlug ??
+                (job.companyName
+                  ? job.companyName.toLowerCase().replace(/\s+/g, "-")
+                  : "");
+
+              return (
+                <li
+                  key={job.id}
+                  className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white/80 px-4 py-3 text-sm shadow-sm dark:border-gray-800 dark:bg-gray-800/70"
+                >
+                  <div className="min-w-0">
+                    {/* Title */}
+                    <Link
+                      href={job.url ?? (slug ? `/company/${slug}` : "#")}
+                      className="block truncate font-semibold text-gray-900 hover:text-blue-600 hover:underline dark:text-gray-100 dark:hover:text-blue-400"
+                    >
+                      {job.title}
+                    </Link>
+
+                    {/* Company + location */}
+                    <div className="mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
+                      {job.companyName && (
+                        <>
+                          <Link
+                            href={slug ? `/company/${slug}` : "#"}
+                            className="flex items-center gap-1 font-medium text-gray-600 hover:text-blue-600 hover:underline dark:text-gray-300 dark:hover:text-blue-400"
+                          >
+                            <CompanyLogo slug={slug} name={job.companyName} size={14} />
+                            <span>{job.companyName}</span>
+                          </Link>
+                          {locationDisplay && <span>—</span>}
+                        </>
+                      )}
+                      {locationDisplay && <span>{locationDisplay}</span>}
+                    </div>
+                  </div>
+
+                  {/* Date on the right, smaller */}
+                  <div className="shrink-0 text-xs text-gray-400">
+                    {postedPretty}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </div>
       )}

@@ -38,8 +38,8 @@ export default function JobCard({
     descriptionHtml?: string | null;
     isExpanded?: boolean;
     onToggleDescription?: () => void;
-    onSelect?: () => void;             // NEW
-    showInlineDescription?: boolean;   // NEW
+    onSelect?: () => void;
+    showInlineDescription?: boolean;
 }) {
     const postedPretty = new Date(job.postedAt).toLocaleDateString(undefined, {
         year: "numeric",
@@ -47,8 +47,6 @@ export default function JobCard({
         day: "numeric",
     });
 
-
-    // Shorten multi-location strings
     let locationDisplay = job.location;
     if (job.location) {
         const parts = job.location.split(";").map((p) => p.trim()).filter(Boolean);
@@ -93,30 +91,23 @@ export default function JobCard({
                         {job.title}
                     </h2>
 
-                    {/* ⬇️ CHANGE THIS FROM <p> TO <div> */}
                     <div className="flex items-center gap-2 overflow-hidden text-ellipsis whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {job.companyName && (
-                            (() => {
-                                const slug =
-                                    job.companySlug ??
-                                    job.companyName.toLowerCase().replace(/\s+/g, "-");
+                        {job.companyName && (() => {
+                            const slug =
+                                job.companySlug ??
+                                job.companyName.toLowerCase().replace(/\s+/g, "-");
 
-                                return (
-                                    <Link
-                                        href={`/company/${slug}`}
-                                        className="pointer-events-auto flex items-center gap-2 font-medium text-gray-600 hover:text-blue-600 hover:underline dark:text-gray-400 dark:hover:text-blue-400"
-                                        onClick={(e) => e.stopPropagation()}
-                                    >
-                                        <CompanyLogo
-                                            slug={slug}
-                                            name={job.companyName}
-                                            size={14}
-                                        />
-                                        <span>{job.companyName}</span>
-                                    </Link>
-                                );
-                            })()
-                        )}
+                            return (
+                                <Link
+                                    href={`/company/${slug}`}
+                                    className="pointer-events-auto flex items-center gap-2 font-medium text-gray-600 hover:text-blue-600 hover:underline dark:text-gray-400 dark:hover:text-blue-400"
+                                    onClick={(e) => e.stopPropagation()}
+                                >
+                                    <CompanyLogo slug={slug} name={job.companyName} size={14} />
+                                    <span>{job.companyName}</span>
+                                </Link>
+                            );
+                        })()}
 
                         {job.companyName && locationDisplay && <span>—</span>}
                         {locationDisplay && <span>{locationDisplay}</span>}
@@ -126,7 +117,6 @@ export default function JobCard({
                             Posted {postedPretty}
                         </span>
                     </div>
-                    {/* ⬆️ closing div */}
                 </div>
 
                 {/* RIGHT: compact transparency stats */}
@@ -136,8 +126,7 @@ export default function JobCard({
                             className={`text-xs text-gray-600 transition dark:text-gray-300 ${isAuthed ? "" : "pointer-events-none select-none blur-[3px]"
                                 }`}
                             aria-hidden={!isAuthed}
-                        >
-                        </div>
+                        />
                     </div>
                 )}
             </div>
@@ -174,3 +163,4 @@ export default function JobCard({
         </li>
     );
 }
+
