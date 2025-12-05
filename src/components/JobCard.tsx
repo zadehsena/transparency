@@ -12,7 +12,7 @@ export type JobCardJob = {
     url?: string;
     unit?: string | null;
     companyName?: string | null;
-    companySlug?: string | null;  // 👈 add this
+    companySlug?: string | null;
 }
 
 export type JobCardStats = {
@@ -64,7 +64,7 @@ export default function JobCard({
         window.open(job.url, "_blank", "noopener,noreferrer");
     };
 
-    const handleKeyDown: React.KeyboardEventHandler<HTMLLIElement> = (e) => {
+    const handleKeyDown: React.KeyboardEventHandler<HTMLDivElement> = (e) => {
         if (e.key === "Enter" || e.key === " ") {
             e.preventDefault();
             handleClick();
@@ -72,7 +72,7 @@ export default function JobCard({
     };
 
     return (
-        <li
+        <div
             className="group relative cursor-pointer rounded-2xl border bg-white p-6 shadow-sm ring-1 ring-gray-100 transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900 dark:ring-gray-800/80"
             role={job.url || onSelect ? "button" : undefined}
             tabIndex={job.url || onSelect ? 0 : -1}
@@ -160,7 +160,6 @@ export default function JobCard({
             )}
 
             <span className="pointer-events-none absolute inset-0 rounded-xl ring-1 ring-transparent transition group-hover:ring-black/5 dark:group-hover:ring-white/10" />
-        </li>
+        </div>
     );
 }
-

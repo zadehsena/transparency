@@ -87,7 +87,7 @@ export default function HeaderSearch() {
 
   return (
     <div
-      className="relative flex w-full items-center gap-2"
+      className="relative flex items-center gap-2 w-full"
       role="combobox"
       aria-expanded={open}
       aria-controls="company-ac-list"

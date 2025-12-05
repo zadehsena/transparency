@@ -22,7 +22,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Providers>
           <PendingApplicationsPrompt />
           <header className="border-b bg-white">
-            <nav className="mx-auto flex max-w-6xl items-center justify-between gap-4 p-4">
+            <nav className="mx-auto flex max-w-6xl items-center justify-between gap-3 p-4">
               <Link href="/" className="flex items-center gap-2 hover:opacity-80">
                 <Image
                   src="/images/favicon.png"
@@ -31,14 +31,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                   height={28}
                   className="h-7 w-7"
                 />
-                <span className="text-xl font-semibold text-black">Transparency</span>
+                <span className="text-xl font-semibold text-black">
+                  Transparency
+                </span>
               </Link>
+
               {/* Search Bar */}
-              <div className="flex-1 max-w-xl">
+              <div className="flex-1 max-w-[220px] sm:max-w-md lg:max-w-2xl">
                 <HeaderSearch />
               </div>
 
-              <div className="flex items-center gap-3">
+              {/* Auth buttons */}
+              <div className="flex items-center">
                 <AuthButtons />
               </div>
             </nav>
@@ -47,11 +51,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <main className="flex-1">{children}</main>
 
           <footer className="border-t bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/60 dark:bg-gray-900/80 dark:border-gray-800">
-            <div className="mx-auto max-w-6xl px-4 py-10">
+            <div className="mx-auto max-w-6xl px-10 py-10">
               {/* 2 cols on mobile, 3 on sm, 4 on md+ */}
-              <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:grid-cols-4">
-                {/* Brand: full width on mobile, normal on sm+ */}
-                <div className="col-span-2 sm:col-span-1">
+              <div className="grid grid-cols-3 gap-8 justify-items-center md:grid-cols-4 md:justify-items-start">
+                {/* Brand: full width on mobile, 1 col on md+ */}
+                <div className="col-span-3 md:col-span-1">
                   <Link href="/" className="text-lg font-semibold text-black dark:text-white">
                     Transparency
                   </Link>
@@ -64,8 +68,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Product</h3>
                   <ul className="mt-3 space-y-2 text-sm">
-                    <li><Link href="/jobs" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Jobs</Link></li>
-                    <li><Link href="/applications" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Your applications</Link></li>
+                    <li>
+                      <Link
+                        href="/jobs"
+                        className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        Jobs
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/applications"
+                        className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        Your applications
+                      </Link>
+                    </li>
                   </ul>
                 </div>
 
@@ -96,8 +114,22 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 <div>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Legal</h3>
                   <ul className="mt-3 space-y-2 text-sm">
-                    <li><Link href="/privacy" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Privacy</Link></li>
-                    <li><Link href="/terms" className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200">Terms</Link></li>
+                    <li>
+                      <Link
+                        href="/privacy"
+                        className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        Privacy
+                      </Link>
+                    </li>
+                    <li>
+                      <Link
+                        href="/terms"
+                        className="text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-gray-200"
+                      >
+                        Terms
+                      </Link>
+                    </li>
                   </ul>
 
                   <div className="mt-4 flex items-center gap-4">
@@ -130,6 +162,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     </a>
                   </div>
                 </div>
+
               </div>
             </div>
 

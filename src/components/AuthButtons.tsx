@@ -20,10 +20,15 @@ export default function AuthButtons() {
   if (status === "authenticated") {
     return (
       <>
-        <div className="hidden gap-3 sm:flex">
+        <div className="flex gap-3">
           <Link
             href="/profile"
-            className="inline-flex items-center rounded-lg border border-gray-900 px-4 py-2 text-gray-900 transition-colors hover:bg-gray-900 hover:text-white"
+            className="
+    inline-flex items-center rounded-lg border border-gray-900
+    px-3 py-1.5 text-xs
+    sm:px-4 sm:py-2 sm:text-sm
+    text-gray-900 transition-colors hover:bg-gray-900 hover:text-white
+  "
           >
             Profile
           </Link>
@@ -53,18 +58,25 @@ export default function AuthButtons() {
   }
 
   // Logged out
+  // Logged out
   return (
     <>
-      <div className="hidden gap-3 sm:flex">
+      <div className="flex gap-2">
         <button
           onClick={() => setModal("login")}
-          className="inline-flex items-center rounded-lg border border-gray-900 px-4 py-2 text-gray-900 transition-colors hover:bg-gray-900 hover:text-white"
+          className="
+    inline-flex items-center rounded-lg border border-gray-900
+    px-3 py-1.5 text-xs
+    sm:px-4 sm:py-2 sm:text-sm
+    font-medium text-gray-900
+    transition-colors hover:bg-gray-900 hover:text-white
+  "
         >
           Log in
         </button>
       </div>
 
-      {/* Modals (outside hidden container for mobile) */}
+      {/* Modals */}
       {modal === "login" && (
         <LoginModal
           onClose={() => setModal(null)}
