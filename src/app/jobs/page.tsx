@@ -83,36 +83,8 @@ export default async function JobsIndex({
         initialJobs={initialJobs}
         buStats={[]}
         showStats={false}
-        disableLoadMore={true}
         initialFilters={{}}
       />
-
-      {/* Page-level pagination */}
-      <nav className="mt-6 flex items-center justify-between text-sm text-gray-600 dark:text-gray-300">
-        <span>
-          Showing {total === 0 ? 0 : skip + 1}–
-          {skip + initialJobs.length} of {total} jobs
-        </span>
-
-        <div className="flex items-center gap-3">
-          {hasPrev && (
-            <Link
-              href={`/jobs?page=${page - 1}`}
-              className="rounded-full border px-3 py-1 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-            >
-              Previous
-            </Link>
-          )}
-          {hasNext && (
-            <Link
-              href={`/jobs?page=${page + 1}`}
-              className="rounded-full border px-3 py-1 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800"
-            >
-              Next
-            </Link>
-          )}
-        </div>
-      </nav>
     </main>
   );
 }

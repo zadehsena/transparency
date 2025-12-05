@@ -4,6 +4,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSession } from "next-auth/react";
 import { openAuthModal } from "@/lib/authModal";
+import Link from "next/link";
 import JobCard, {
   type JobCardJob,
   type JobCardStats,
@@ -237,8 +238,8 @@ export default function CompanyJobs({
     }
   }
 
-  async function handleApplySelected() {
-    if (!selectedJob || !selectedJob.url) return;
+  async function handleApply(job: Job | null) {
+    if (!job || !job.url) return;
 
     // not logged in → show your existing login/signup modal
     if (!isAuthed) {
@@ -250,18 +251,189 @@ export default function CompanyJobs({
       await fetch("/api/applications", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ jobId: selectedJob.id }),
+        body: JSON.stringify({ jobId: job.id }),
       });
     } catch (err) {
       console.error("Failed to track application click", err);
       // still let them apply
     } finally {
-      window.open(selectedJob.url, "_blank", "noopener,noreferrer");
+      window.open(job.url, "_blank", "noopener,noreferrer");
     }
   }
 
-  const selectedCompanyName = selectedJob?.companyName ?? companyName;
-  const selectedCompanySlug = selectedJob?.companySlug ?? slug;
+  function JobDetail({
+    job,
+    fallbackCompanyName,
+    fallbackCompanySlug,
+    onApply,
+  }: {
+    job: Job;
+    fallbackCompanyName: string;
+    fallbackCompanySlug: string;
+    onApply: () => void;
+  }) {
+    const effectiveCompanyName = job.companyName ?? fallbackCompanyName;
+    const effectiveCompanySlug = job.companySlug ?? fallbackCompanySlug;
+
+    return (
+      <>
+        {/* Header: logo + title + company/location + apply button */}
+        <header className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
+
+          {/* LEFT: logo + title */}
+          <div className="flex min-w-0 flex-1 gap-3">
+            <div className="flex-shrink-0">
+              {effectiveCompanySlug ? (
+                <Link
+                  href={`/company/${effectiveCompanySlug}`}
+                  className="flex items-center justify-center rounded-md bg-gray-900 p-2 hover:bg-gray-800 transition"
+                >
+                  <CompanyLogo
+                    slug={effectiveCompanySlug}
+                    name={effectiveCompanyName}
+                    size={40}
+                  />
+                </Link>
+              ) : (
+                <div className="flex items-center justify-center rounded-md bg-gray-900 p-2">
+                  <CompanyLogo
+                    slug={effectiveCompanySlug}
+                    name={effectiveCompanyName}
+                    size={40}
+                  />
+                </div>
+              )}
+            </div>
+
+            <div className="flex min-w-0 flex-col justify-center">
+              <h2 className="break-words text-xl font-semibold leading-snug text-gray-100">
+                {job.title}
+              </h2>
+              <p className="mt-1 text-sm text-gray-400">
+                {effectiveCompanySlug ? (
+                  <Link href={`/company/${effectiveCompanySlug}`} className="hover:underline">
+                    {effectiveCompanyName}
+                  </Link>
+                ) : (
+                  effectiveCompanyName
+                )}
+                {job.location ? ` • ${job.location}` : ""}
+              </p>
+            </div>
+          </div>
+
+          {/* RIGHT: buttons */}
+          <div className="flex w-full flex-row gap-2 sm:ml-4 sm:w-auto sm:flex-col sm:items-end">
+            {job.url && (
+              <button
+                type="button"
+                onClick={onApply}
+                className="
+          btn-shine
+          inline-flex items-center justify-center rounded-full
+          bg-blue-600 px-4 py-2 text-sm font-medium text-white
+          hover:bg-blue-500
+          transition-all duration-300
+          whitespace-nowrap
+        "
+              >
+                Apply on {effectiveCompanyName}
+              </button>
+            )}
+
+            <button
+              type="button"
+              className="
+        btn-shine inline-flex items-center justify-center gap-2 rounded-full
+        bg-amber-400 px-4 py-2 text-sm font-medium text-gray-900
+        hover:bg-amber-300
+        transition-all duration-300
+        whitespace-nowrap
+      "
+            >
+              <Image
+                src="/images/coins.png"
+                alt="coins"
+                width={16}
+                height={16}
+                className="h-4 w-4"
+              />
+              Request Referral
+            </button>
+          </div>
+        </header>
+
+
+        {/* Transparency Summary */}
+        <div
+          className="
+          relative mb-6 overflow-hidden rounded-2xl border border-gray-800 
+          bg-gradient-to-br from-slate-900/70 to-slate-800/40
+          p-5 shadow-lg shadow-black/30
+        "
+        >
+          <div className="absolute left-0 top-0 h-full w-1.5 rounded-l-2xl bg-blue-500/60" />
+          <div
+            className="pointer-events-none absolute inset-0 
+          bg-gradient-to-br from-white/5 to-transparent"
+          />
+
+          <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-100">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-blue-400" />
+            Transparency Summary
+          </h3>
+
+          <ul className="space-y-1.5 text-[13px] text-gray-300">
+            <li>
+              <span className="font-medium text-gray-100">Response time:</span>{" "}
+              3–7 days
+            </li>
+            <li>
+              <span className="font-medium text-gray-100">Response rate:</span>{" "}
+              ~42%
+            </li>
+            <li>
+              <span className="font-medium text-gray-100">
+                Interview likelihood:
+              </span>{" "}
+              ~12%
+            </li>
+            <li>
+              <span className="font-medium text-gray-100">Offer likelihood:</span>{" "}
+              ~2%
+            </li>
+            <li>
+              <span className="font-medium text-gray-100">Job accuracy:</span>{" "}
+              High
+            </li>
+          </ul>
+        </div>
+
+        {/* Description */}
+        <div
+          className="
+          prose prose-sm max-w-none leading-relaxed text-gray-800
+          dark:prose-invert dark:text-gray-100
+          [&_p>strong]:mb-2
+          [&_p>strong]:mt-6
+          [&_p>strong]:block
+          [&_p>strong]:text-lg
+          [&_p>strong]:font-semibold
+          [&_p>strong]:text-gray-100
+          [&_p]:my-3
+          [&_ul]:my-4
+          [&_li]:my-1.5
+        "
+        >
+          <div
+            dangerouslySetInnerHTML={{
+              __html: decodeHtmlEntities(job.descriptionHtml ?? ""),
+            }}
+          />
+        </div>
+      </>
+    );
+  }
 
   // shared renderer for the job list
   const renderJobsList = (extraClass = "") => (
@@ -271,6 +443,8 @@ export default function CompanyJobs({
     >
       <ul className="space-y-3">
         {filteredJobs.map((job) => {
+          const isSelected = selectedId === job.id;
+
           const cardJob: JobCardJob = {
             id: job.id,
             title: job.title,
@@ -282,16 +456,31 @@ export default function CompanyJobs({
           };
 
           return (
-            <JobCard
-              key={job.id}
-              job={cardJob}
-              stats={getJobStats(job)}
-              isAuthed={isAuthed}
-              descriptionHtml={job.descriptionHtml ?? null}
-              // split-view behavior:
-              onSelect={() => setSelectedId(job.id)}
-              showInlineDescription={false}
-            />
+            <li key={job.id}>
+              <JobCard
+                job={cardJob}
+                stats={getJobStats(job)}
+                isAuthed={isAuthed}
+                descriptionHtml={job.descriptionHtml ?? null}
+                // split-view behavior:
+                onSelect={() =>
+                  setSelectedId((prev) => (prev === job.id ? null : job.id))
+                }
+                showInlineDescription={false}
+              />
+
+              {/* Mobile dropdown: full detail under the card */}
+              {isSelected && (
+                <div className="mt-3 rounded-2xl border border-gray-800 bg-gray-950 p-4 lg:hidden">
+                  <JobDetail
+                    job={job}
+                    fallbackCompanyName={companyName}
+                    fallbackCompanySlug={slug}
+                    onApply={() => handleApply(job)}
+                  />
+                </div>
+              )}
+            </li>
           );
         })}
       </ul>
@@ -438,169 +627,23 @@ export default function CompanyJobs({
             {/* RIGHT: full description */}
             <aside
               className="
-                min-w-0 rounded-2xl border bg-white p-6 shadow-sm 
-                dark:border-gray-800 dark:bg-gray-900 
-                lg:max-h-[calc(100vh-180px)] 
-                lg:overflow-y-auto
-              "
+    min-w-0 rounded-2xl border bg-white p-6 shadow-sm 
+    dark:border-gray-800 dark:bg-gray-900 
+    lg:max-h-[calc(100vh-180px)] 
+    lg:overflow-y-auto
+  "
             >
               {!selectedJob ? (
                 <div className="flex h-full items-center justify-center text-sm text-gray-500 dark:text-gray-400">
                   Select a job on the left to see the full description.
                 </div>
               ) : (
-                <>
-                  {/* Header: logo + title + company/location + apply button */}
-                  <header className="mb-6 flex items-start justify-between gap-4">
-                    {/* LEFT: logo + title */}
-                    <div className="flex min-w-0 flex-1 gap-3">
-                      {/* Logo should NEVER shrink */}
-                      <div className="flex-shrink-0">
-                        <div className="flex items-center justify-center rounded-md bg-gray-900 p-2">
-                          <CompanyLogo
-                            slug={selectedCompanySlug}
-                            name={selectedCompanyName}
-                            size={40}
-                          />
-                        </div>
-                      </div>
-
-                      {/* Title + company */}
-                      <div className="flex min-w-0 flex-col justify-center">
-                        <h2 className="break-words text-xl font-semibold leading-snug text-gray-100">
-                          {selectedJob.title}
-                        </h2>
-                        <p className="mt-1 text-sm text-gray-400">
-                          {selectedCompanyName}
-                          {selectedJob.location
-                            ? ` • ${selectedJob.location}`
-                            : ""}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* RIGHT: buttons */}
-                    <div className="ml-4 flex flex-shrink-0 flex-col items-end gap-2">
-                      {selectedJob.url && (
-                        <button
-                          type="button"
-                          onClick={handleApplySelected}
-                          className="
-                            btn-shine
-                            inline-flex items-center justify-center rounded-full
-                            bg-blue-600 px-4 py-2 text-sm font-medium text-white
-                            hover:bg-blue-500
-                            transition-all duration-300
-                            whitespace-nowrap
-                          "
-                        >
-                          Apply on {selectedCompanyName}
-                        </button>
-                      )}
-
-                      <button
-                        type="button"
-                        className="
-                          btn-shine inline-flex items-center justify-center gap-2 rounded-full
-                          bg-amber-400 px-4 py-2 text-sm font-medium text-gray-900
-                          hover:bg-amber-300
-                          transition-all duration-300
-                          whitespace-nowrap
-                        "
-                      >
-                        <Image
-                          src="/images/coins.png"
-                          alt="coins"
-                          width={16}
-                          height={16}
-                          className="h-4 w-4"
-                        />
-                        Request Referral
-                      </button>
-                    </div>
-                  </header>
-
-                  {/* Transparency Summary */}
-                  <div
-                    className="
-                      relative mb-6 overflow-hidden rounded-2xl border border-gray-800 
-                      bg-gradient-to-br from-slate-900/70 to-slate-800/40
-                      p-5 shadow-lg shadow-black/30
-                    "
-                  >
-                    {/* Accent left border */}
-                    <div className="absolute left-0 top-0 h-full w-1.5 rounded-l-2xl bg-blue-500/60" />
-
-                    {/* Soft highlight */}
-                    <div
-                      className="pointer-events-none absolute inset-0 
-                      bg-gradient-to-br from-white/5 to-transparent"
-                    />
-
-                    <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-gray-100">
-                      <span className="h-2 w-2 animate-pulse rounded-full bg-blue-400" />
-                      Transparency Summary
-                    </h3>
-
-                    <ul className="space-y-1.5 text-[13px] text-gray-300">
-                      <li>
-                        <span className="font-medium text-gray-100">
-                          Response time:
-                        </span>{" "}
-                        3–7 days
-                      </li>
-                      <li>
-                        <span className="font-medium text-gray-100">
-                          Response rate:
-                        </span>{" "}
-                        ~42%
-                      </li>
-                      <li>
-                        <span className="font-medium text-gray-100">
-                          Interview likelihood:
-                        </span>{" "}
-                        ~12%
-                      </li>
-                      <li>
-                        <span className="font-medium text-gray-100">
-                          Offer likelihood:
-                        </span>{" "}
-                        ~2%
-                      </li>
-                      <li>
-                        <span className="font-medium text-gray-100">
-                          Job accuracy:
-                        </span>{" "}
-                        High
-                      </li>
-                    </ul>
-                  </div>
-
-                  {/* Description */}
-                  <div
-                    className="
-                      prose prose-sm max-w-none leading-relaxed text-gray-800
-                      dark:prose-invert dark:text-gray-100
-                      [&_p>strong]:mb-2
-                      [&_p>strong]:mt-6
-                      [&_p>strong]:block
-                      [&_p>strong]:text-lg
-                      [&_p>strong]:font-semibold
-                      [&_p>strong]:text-gray-100
-                      [&_p]:my-3
-                      [&_ul]:my-4
-                      [&_li]:my-1.5
-                    "
-                  >
-                    <div
-                      dangerouslySetInnerHTML={{
-                        __html: decodeHtmlEntities(
-                          selectedJob.descriptionHtml ?? ""
-                        ),
-                      }}
-                    />
-                  </div>
-                </>
+                <JobDetail
+                  job={selectedJob}
+                  fallbackCompanyName={companyName}
+                  fallbackCompanySlug={slug}
+                  onApply={() => handleApply(selectedJob)}
+                />
               )}
             </aside>
           </div>
