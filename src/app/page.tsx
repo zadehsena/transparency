@@ -370,8 +370,12 @@ export default async function HomePage() {
                   <Link href={`/company/${it.slug}`} className="block">
                     <div className="flex items-center justify-between gap-3">
                       {/* Left: logo + name + trend */}
-                      <div className="flex min-w-0 items-center gap-2">
-                        <TrendIcon t={it.trendSearches} className="mx-2" />
+                      <div className="flex min-w-0 flex-1 items-center gap-2">
+                        {/* Only show trend icon on md+ */}
+                        <div className="hidden md:block">
+                          <TrendIcon t={it.trendSearches} className="mx-2" />
+                        </div>
+
                         <CompanyLogo slug={it.slug} name={it.name} size={18} />
                         <div className="truncate font-medium text-gray-100">
                           {it.name}
@@ -418,8 +422,11 @@ export default async function HomePage() {
                   <Link href={`/company/${it.slug}`} className="block">
                     <div className="flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-2">
-                        {/* Trend icon – currently flat, can wire to real trend later */}
-                        <TrendIcon t="flat" className="mx-2" />
+                        {/* Only show trend icon on md+ */}
+                        <div className="hidden md:block">
+                          <TrendIcon t="flat" className="mx-2" />
+                        </div>
+
                         <CompanyLogo slug={it.slug} name={it.name} size={18} />
                         <div className="truncate font-medium text-gray-900 dark:text-gray-100">
                           {it.name}
